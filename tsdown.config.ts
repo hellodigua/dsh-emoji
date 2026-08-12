@@ -16,9 +16,13 @@ export default defineConfig([
     deps: {
       neverBundle: [
         '@deepseek-ai/cordis',
+        '@deepseek-ai/dsh-client-connection',
+        '@deepseek-ai/dsh-host-apiproxy',
         '@deepseek-ai/dsh-host-webserver',
+        '@deepseek-ai/dsh-llm',
+        '@deepseek-ai/dsh-settings',
         '@deepseek-ai/dsh-system-prompt',
-        '@deepseek-ai/dsh-tools',
+        '@deepseek-ai/schemastery',
       ],
     },
   },
@@ -32,6 +36,9 @@ export default defineConfig([
     fixedExtension: false,
     dts: false,
     clean: false,
+    deps: {
+      neverBundle: ['react', 'react/jsx-runtime'],
+    },
     outputOptions: {
       entryFileNames: 'client.js',
       banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(PACKAGE_ID)}, factory: (require) => {`,

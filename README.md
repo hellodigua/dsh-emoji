@@ -1,28 +1,53 @@
 # dsh-emoji
 
-`dsh-emoji` 是 DeepSeek Harness 的 Profile Bundle，让 Agent 按回复语义选择微型表情，并把它作为 Markdown 图片紧贴在文字后显示。v0.1 只支持 Web Assistant 回复和 Bilibili 35 张 AVIF，不修改 DSH core。
+`dsh-emoji` 是 DeepSeek Harness 的 Profile Bundle，让 Agent 在正文中输出受控情绪标签，再由 Host 确定性转成微型 Markdown 图片。当前只支持 Web Assistant 回复，内置 40 张透明背景的正面鲸鱼二创表情，不修改 DSH core。
 
 ## 工作方式
 
-- Host 注册 `insert_emoji({ query, platform? })`，在本地 catalog 中确定性检索表情。
-- Host 通过 `/api/dsh-emoji/assets/bilibili/<file>.avif` 提供包内图片。
-- Web Client 只覆盖上述路由的 `<img>`，显示为 `1.25em` 的行内元素。
-- system prompt 约束一回合最多一张，并在严肃场景或用户拒绝时跳过。
+- system prompt 向模型提供 catalog 中的 40 个合法标签，例如 `::开心::`、`::思考::`、`::庆祝::`、`::抱歉::`、`::鼓掌::`。
+- Host 包装 Agent 的 LLM 流，在最终 text block 关闭时把合法标签确定性映射为素材 Markdown；该过程不产生 Function Call 或第二次模型请求。
+- Host 通过 `/api/dsh-emoji/assets/deepseek/<file>.png` 提供包内图片。
+- Web Client 只覆盖上述路由的 `<img>`，显示为 `2em` 的行内元素。
+- 转写器只处理 Markdown 普通文本，跳过行内代码、围栏代码和未知标签，并在程序层限制一回合最多一张。
+
+## 调整 AI 的表情频率
+
+安装并重启 Web Host 后，打开「设置 → 插件 → dsh-emoji」即可选择：
+
+- `关闭`：移除表情标签协议，该请求的输出不进行标签转写。
+- `智能`：只在轻松、友好且适合表达情绪时使用，默认值。
+- `高频`：提示 AI 在大多数适合的日常回答中主动使用一张。
+
+还可以在“自定义提示词”文本框中调整表情的选择、语气、插入位置和需要跳过表情的场景。插件不预设“严肃内容跳过”等业务规则；需要时由用户直接写入自定义提示词。保存后无需重启，从下一次模型调用开始生效；配置持久化到 DSH Settings 文档，默认是 `~/.dsh/settings.yaml` 的 `dsh-emoji` 段。
+
+自定义提示词最多 4000 字符，可以清空。插件仍会独立保留模式标记、合法标签清单、只处理面向用户正文和一回合最多一张等协议约束，避免误删关键规则后导致转写失效。
+
+`智能` 与 `高频` 是否选择标签仍取决于模型。插件不会在模型没有选择表情时自动补图；用户可通过自定义提示词定义需要跳过表情的场景。
+
+## 重新切分鲸鱼表情
+
+切片脚本只接受当前登记的 `1254×1254`、`8×5` 蓝色正面鲸鱼完整版总览 PNG。每次运行会避开标题和编号文字、去除白色背景，并输出 40 张 `128×128 RGBA PNG`：
+
+```sh
+python3 scripts/slice-deepseek-sheet.py \
+  "/absolute/path/to/known-sheet.png" \
+  assets/emoji/deepseek \
+  --preview /tmp/dsh-emoji-deepseek-preview.png
+```
+
+脚本依赖 Pillow。输出 ID 与总览图中的编号严格一致，从 `ds_01` 连续到 `ds_40`；源图 SHA-256 与完整清单见 [ASSETS.md](ASSETS.md)。旧侧身蓝鲸系列已删除；Bilibili 同步脚本和本地素材暂作为迁移参考保留，但不进入运行时 catalog 或 npm 发布白名单。
 
 ## 本地开发
 
 ```sh
 corepack pnpm install
-corepack pnpm run sync:bilibili -- \
-  /absolute/path/to/emoji \
-  3693240a2db6ec017944e595a09e8ae900b5549c
 corepack pnpm typecheck
 corepack pnpm test
 corepack pnpm build
 corepack pnpm pack --dry-run
 ```
 
-开发依赖通过 `link:` 指向同级 `../test-hellodigua` 当前 checkout；发布产物自身不依赖这些本地路径。素材同步命令要求显式传入上游仓库绝对路径和 40 位 revision，并核对真实 HEAD 以及 `emoji.json`、`output/bilibili` 的工作区状态；运行时只读取包内 `assets/`。
+开发依赖通过 `link:` 指向同级 `../test-hellodigua` 当前 checkout；发布产物自身不依赖这些本地路径，运行时只读取包内 `assets/`。
 
 ## 使用当前 DSH 源码安装
 
@@ -45,6 +70,9 @@ node --import tsx/esm apps/cli/src/bin.ts plugin --profile web remove -w \
 
 - 用户输入正文仍是纯文本，本插件不提供用户侧行内表情选择器。
 - TUI 不显示 Web Client 样式。
+- 一轮最多一张表情；暂不支持“隔几句话一张”的多图策略。
+- 自定义提示词中的表情偏好和跳过场景依赖模型遵循，不提供程序兜底。
+- 模型流式生成标签时，原始标签可能短暂显示，并在 text block 完成后替换为图片。
 - 回复中保存的是带当前 Host 端口的绝对 loopback URL；改变端口或远程访问时，旧消息图片会失效。
-- 普通工具调用会在 transcript 中留下工具卡片。
-- Bilibili 素材再分发授权尚未确认，本仓库当前仅用于本地技术验证，见 [ASSETS.md](ASSETS.md)。
+- 表情链路本身不产生工具卡片；Agent 的其他普通工具调用仍按 DSH 默认方式展示。
+- 总览图及其二创素材的公开分发范围仍需由素材提供者确认，见 [ASSETS.md](ASSETS.md)。

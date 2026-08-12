@@ -10,6 +10,7 @@
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
     "types": ["node"]

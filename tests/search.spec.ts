@@ -7,23 +7,30 @@ describe('emoji semantic search', () => {
   })
 
   it.each([
-    ['你好，友好地打个招呼', 'bilibili:bl_03'],
-    ['收到，没问题', 'bilibili:bl_05'],
-    ['赞同并支持这个方案', 'bilibili:bl_30'],
-    ['完成后的轻松庆祝', 'bilibili:bl_10'],
-    ['笑死了，太好笑了', 'bilibili:bl_01'],
-    ['完全没想到，太惊讶了', 'bilibili:bl_25'],
-    ['让我思考分析一下', 'bilibili:bl_35'],
-    ['别难过，给你一个安慰抱抱', 'bilibili:bl_32'],
-    ['这件事真让人无语', 'bilibili:bl_31'],
+    ['你好，友好地打个招呼', 'deepseek:ds_01'],
+    ['别难过，你只是有点失落', 'deepseek:ds_02'],
+    ['这是什么情况，满头问号', 'deepseek:ds_03'],
+    ['前排吃瓜，看看热闹', 'deepseek:ds_04'],
+    ['这也太气人了，真生气', 'deepseek:ds_05'],
+    ['这件事真让人无语', 'deepseek:ds_06'],
+    ['只是开个玩笑，手动狗头', 'deepseek:ds_07'],
+    ['系统崩了，脑子直接宕机', 'deepseek:ds_08'],
+    ['让我思考分析一下', 'deepseek:ds_13'],
+    ['赞同并支持这个方案', 'deepseek:ds_19'],
+    ['完成后的轻松庆祝', 'deepseek:ds_34'],
+    ['真的非常感谢你的帮助', 'deepseek:ds_36'],
+    ['抱歉，这次确实是我的错', 'deepseek:ds_37'],
+    ['拜托了，请帮帮忙', 'deepseek:ds_39'],
+    ['送上掌声，为你鼓掌', 'deepseek:ds_40'],
   ])('将“%s”稳定匹配到 %s', (query, expected) => {
     expect(searchEmoji(query)?.emoji.id).toBe(expected)
     expect(searchEmoji(query)?.emoji.id).toBe(expected)
   })
 
   it('优先精确名称，并用目录顺序稳定打破同分', () => {
-    expect(searchEmoji('笑哭')?.emoji.id).toBe('bilibili:bl_01')
-    expect(searchEmoji('doge')?.emoji.id).toBe('bilibili:bl_06')
+    expect(searchEmoji('难过')?.emoji.id).toBe('deepseek:ds_02')
+    expect(searchEmoji('doge')?.emoji.id).toBe('deepseek:ds_07')
+    expect(searchEmoji('鼓掌')?.emoji.id).toBe('deepseek:ds_40')
   })
 
   it('空白、标点和无关语义不猜表情', () => {

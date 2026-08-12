@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { emojiByAsset } from './catalog.ts'
 
 export const EMOJI_API_ROOT = '/api/dsh-emoji/assets'
-export const EMOJI_ASSET_REVISION = '1'
+export const EMOJI_ASSET_REVISION = '8'
 export const DEFAULT_EMOJI_ASSET_ROOT = fileURLToPath(new URL('../assets/emoji/', import.meta.url))
 
 function notFound(response: ServerResponse): void {
@@ -13,7 +13,7 @@ function notFound(response: ServerResponse): void {
   response.end('not found')
 }
 /**
- * 服务一张 catalog 白名单内的 AVIF；非法编码、额外路径段和缺失文件统一返回 404。
+ * 服务一张 catalog 白名单内的 PNG；非法编码、额外路径段和缺失文件统一返回 404。
  * @returns true 表示 URL 属于本插件路由前缀并已完成响应。
  */
 export function handleEmojiAssetRequest(
@@ -36,7 +36,7 @@ export function handleEmojiAssetRequest(
     notFound(response)
     return true
   }
-  if (platform !== 'bilibili' || !/^bl_\d{2}\.avif$/.test(file) || emojiByAsset(platform, file) === undefined) {
+  if (emojiByAsset(platform, file) === undefined) {
     notFound(response)
     return true
   }
@@ -50,7 +50,7 @@ export function handleEmojiAssetRequest(
     response.end()
   })
   response.writeHead(200, {
-    'content-type': 'image/avif',
+    'content-type': 'image/png',
     'cache-control': 'public, max-age=86400, immutable',
   })
   stream.pipe(response)

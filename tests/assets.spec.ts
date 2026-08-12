@@ -30,23 +30,23 @@ async function serve(assetRoot?: string): Promise<string> {
 }
 
 describe('emoji asset route', () => {
-  it('以 AVIF 和不可变缓存头提供 catalog 白名单素材', async () => {
+  it('以 PNG 和不可变缓存头提供 catalog 白名单素材', async () => {
     const base = await serve()
-    const response = await fetch(`${base}${EMOJI_API_ROOT}/bilibili/bl_01.avif?v=1`)
+    const response = await fetch(`${base}${EMOJI_API_ROOT}/deepseek/ds_01.png?v=8`)
     expect(response.status).toBe(200)
-    expect(response.headers.get('content-type')).toBe('image/avif')
+    expect(response.headers.get('content-type')).toBe('image/png')
     expect(response.headers.get('cache-control')).toBe('public, max-age=86400, immutable')
-    expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(1_000)
+    expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(10_000)
   })
 
   it.each([
-    '/bilibili/bl_99.avif',
-    '/douyin/bl_01.avif',
-    '/bilibili/../bl_01.avif',
-    '/bilibili/%2e%2e%2fbl_01.avif',
-    '/bilibili/bl_01.png',
-    '/bilibili/bl_01.avif/extra',
-    '/bilibili/%zz',
+    '/deepseek/ds_99.png',
+    '/douyin/ds_01.png',
+    '/deepseek/../ds_01.png',
+    '/deepseek/%2e%2e%2fds_01.png',
+    '/deepseek/ds_01.avif',
+    '/deepseek/ds_01.png/extra',
+    '/deepseek/%zz',
   ])('拒绝未知或非法路径 %s', async suffix => {
     const base = await serve()
     const response = await fetch(`${base}${EMOJI_API_ROOT}${suffix}`)
@@ -57,7 +57,7 @@ describe('emoji asset route', () => {
     const emptyRoot = await mkdtemp(join(tmpdir(), 'dsh-emoji-assets-'))
     tempRoots.add(emptyRoot)
     const base = await serve(emptyRoot)
-    const response = await fetch(`${base}${EMOJI_API_ROOT}/bilibili/bl_01.avif`)
+    const response = await fetch(`${base}${EMOJI_API_ROOT}/deepseek/ds_01.png`)
     expect(response.status).toBe(404)
   })
 
