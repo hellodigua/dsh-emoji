@@ -19,6 +19,7 @@
   },
   "files": [
     "assets/emoji/deepseek",
+    "assets/readme",
     "lib",
     "ASSETS.md",
     "LICENSE",
