@@ -1,0 +1,66 @@
+{
+  "name": "@dsh-external/dsh-emoji",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DSH Agent 回复中的语义化微型行内表情插件",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "assets/emoji/bilibili",
+    "lib",
+    "ASSETS.md",
+    "LICENSE",
+    "README.md",
+    "cordis.patch.yml"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "pnpm run clean && tsc -p tsconfig.json --emitDeclarationOnly && tsdown",
+    "clean": "node scripts/clean.mjs",
+    "sync:bilibili": "node scripts/sync-bilibili-assets.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-host-webserver": "*",
+    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-tools": "*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "link:../test-hellodigua/vendor/cordis",
+    "@deepseek-ai/dsh-host-webserver": "link:../test-hellodigua/packages/host/webserver",
+    "@deepseek-ai/dsh-llm": "link:../test-hellodigua/packages/llm/llm",
+    "@deepseek-ai/dsh-system-prompt": "link:../test-hellodigua/packages/core/system-prompt",
+    "@deepseek-ai/dsh-tools": "link:../test-hellodigua/packages/core/tools",
+    "@types/node": "^24.0.0",
+    "jsdom": "^26.1.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  },
+  "license": "MIT"
+}

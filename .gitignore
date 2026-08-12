@@ -1,0 +1,5 @@
+node_modules/
+.dsh/
+*.tgz
+*.tsbuildinfo
+.DS_Store
