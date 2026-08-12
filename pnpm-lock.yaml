@@ -23,9 +23,9 @@ importers:
       '@deepseek-ai/dsh-client-runtime':
         specifier: link:../test-hellodigua/packages/client/runtime
         version: link:../test-hellodigua/packages/client/runtime
-      '@deepseek-ai/dsh-client-ui-plugin-config':
-        specifier: link:../test-hellodigua/packages/client/ui-plugin-config
-        version: link:../test-hellodigua/packages/client/ui-plugin-config
+      '@deepseek-ai/dsh-client-ui-settings-plugins':
+        specifier: link:../test-hellodigua/packages/client/ui-settings-plugins
+        version: link:../test-hellodigua/packages/client/ui-settings-plugins
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: link:../test-hellodigua/packages/client/ui-slots
         version: link:../test-hellodigua/packages/client/ui-slots

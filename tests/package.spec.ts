@@ -10,10 +10,22 @@ describe('Profile Bundle package', () => {
     expect(packageJson.dsh.client.inject).toEqual(expect.arrayContaining([
       '@deepseek-ai/dsh-client-connection',
       '@deepseek-ai/dsh-client-locale',
-      '@deepseek-ai/dsh-client-ui-plugin-config',
+      '@deepseek-ai/dsh-client-ui-settings-plugins',
       '@deepseek-ai/dsh-api-remotes',
     ]))
     expect(packageJson.exports['./client'].default).toBe('./lib/client.js')
+  })
+
+  it('明确只接入 DSH rc.2 契约，不保留 rc.1 设置包', () => {
+    const dshPeers = Object.entries(packageJson.peerDependencies)
+      .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
+    expect(dshPeers.length).toBeGreaterThan(0)
+    for (const [, range] of dshPeers) {
+      expect(range).toBe('>=0.0.1-rc.2 <0.0.2')
+    }
+    expect(packageJson.peerDependencies).not.toHaveProperty('@deepseek-ai/dsh-client-ui-plugin-config')
+    expect(packageJson.devDependencies).not.toHaveProperty('@deepseek-ai/dsh-client-ui-plugin-config')
+    expect(packageJson.dsh.client.inject).not.toContain('@deepseek-ai/dsh-client-ui-plugin-config')
   })
 
   it('发布列表包含运行时需要的 Host、Client、patch 和资产', () => {

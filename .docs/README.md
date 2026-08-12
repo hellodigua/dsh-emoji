@@ -15,11 +15,12 @@
 - Host 用 global `llm/stream` 监听跨过运行时 scope，根据请求内模式标记把最终 text block 中的合法标签确定性转成素材 Markdown，不触发第二次模型调用。
 - `/api/dsh-emoji/assets/` 按白名单提供包内 PNG。
 - `./client` 注入可释放样式，把插件图片显示为 `2em` 行内元素。
-- 「设置 → 插件 → dsh-emoji」横向提供关闭、智能、高频三档策略，以及最多 4000 字符的自定义提示词；需要跳过表情的场景也由提示词定义。
+- 「设置 → 插件 → 表情（Whale Emoji）」横向提供关闭、智能、高频三档策略，以及最多 4000 字符的自定义提示词；需要跳过表情的场景也由提示词定义。
 - `dsh-emoji` Settings 命名空间持久化配置；loopback-only 自有 RPC 只读写本插件命名空间。
 - system prompt 随设置实时更新；请求内的模式标记决定该次流是否转写。
 - 切片脚本按 SHA-256 识别当前 `8×5` 正面鲸鱼完整版总览图，共维护 40 张 `128×128 RGBA PNG`。
 - Profile Bundle 同时装配 Host half 与 Web Client half。
+- 当前插件只面向 DSH `>=0.0.1-rc.2 <0.0.2`：Web 配置卡片接入 `dsh-client-ui-settings-plugins`，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`；不保留 `rc.1` 兼容层。
 
 # 目录结构
 
@@ -54,8 +55,9 @@
 # 当前验证状态
 
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- typecheck 与 8 个测试文件、57 项测试通过，覆盖完整 catalog、路由、检索、标签流、自定义提示词、跨 scope/树外模块身份、真实 Cordis、包结构和 Client。
-- 第一阶段配置功能已强制刷新到本机 `web` profile，并在 3080 端口真实验证卡片渲染、`auto → frequent` 保存、Host 重启后持久化回读和 Client 无插件自身错误。
-- 蓝色正面鲸鱼完整版使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致；已重新安装并重启本机 3080 Web Host，40 条在线路由均返回 HTTP 200 且与本地 PNG 逐字节一致，旧 `ds_41` 返回 404。
+- 在 DSH `0.0.1-rc.2` checkout 上，typecheck 与 8 个测试文件、58 项测试通过，覆盖完整 catalog、路由、检索、标签流、自定义提示词、跨 scope/树外模块身份、真实 Cordis、包结构、rc.2 版本边界和 Client。
+- 本机正式 `web` profile 的 dsh-emoji 依赖与 lockfile 已刷新到 rc.2，组合配置能发现该 bundle；但完整 profile 启动仍被另外两个等待旧 `httpServer` 的插件（`plugin-console`、`dsh-paste-input`）阻塞，需由各自项目迁移到 `webServer` 后才能恢复 3080 的完整组合。
+- 使用同一份 rc.2 正式构建创建的隔离 Web profile 已完成真实验证：Host 随机端口启动成功，boot manifest 同时包含 `dsh-client-ui-settings-plugins` 与 dsh-emoji，设置页显示“表情”以及横排关闭/智能/高频和自定义提示词，浏览器控制台无 warning/error；`ds_01` 在线响应与仓库 PNG 的 SHA-256 一致。
+- 蓝色正面鲸鱼完整版使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致；迁移前曾在 3080 验证全部 40 条在线路由，当前 rc.2 隔离验证复核了 `ds_01` 的 HTTP 200、内容类型与逐字节一致性，完整 catalog 仍由自动化测试覆盖。
 - 旧 Bilibili 版本曾验证严肃内容跳过和端口边界；本次鲸鱼包仍需复跑这些扩展场景。
 - 仓库尚未发布 npm 包；转为 public 或公开发布素材前仍需先通过授权门槛。

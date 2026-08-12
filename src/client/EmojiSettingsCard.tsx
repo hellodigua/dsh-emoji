@@ -4,7 +4,7 @@ import { useState, type CSSProperties } from 'react'
 import type {
   InjectFace, PropsLocale, PropsRuntime,
 } from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-client-ui-plugin-config/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import {
   EMOJI_MODES, MAX_CUSTOM_PROMPT_LENGTH, type EmojiMode,
 } from '../settings-model.ts'

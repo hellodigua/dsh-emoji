@@ -2,7 +2,7 @@
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@deepseek-ai/dsh-client-ui-plugin-config/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { EMOJI_SETTINGS_NAMESPACE } from '../settings-model.ts'
 import { EmojiSettingsCard } from './EmojiSettingsCard.tsx'

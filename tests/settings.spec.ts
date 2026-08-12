@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { Settings, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
+import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import {
   buildEmojiGuidance,
   DEFAULT_CUSTOM_PROMPT,
@@ -13,7 +13,7 @@ import {
   EmojiSettingsSchema,
 } from '../src/settings.ts'
 
-class MemorySettings extends Settings {
+class MemorySettings extends SettingsProvider {
   readonly writable = true
   private document: Record<string, unknown> = {}
 

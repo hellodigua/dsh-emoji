@@ -5,13 +5,13 @@ import LlmService, {
   LlmAdapter, markAgentLoopRequest,
   type GenerateOptions, type StreamChunk,
 } from '@deepseek-ai/dsh-llm'
-import { Settings, settingsNamespace, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
+import { SettingsProvider, settingsNamespace, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import {
   apply, DEFAULT_EMOJI_SETTINGS, EMOJI_GUIDANCE, EMOJI_SETTINGS_NAMESPACE,
 } from '../src/index.ts'
 
-class MemorySettings extends Settings {
+class MemorySettings extends SettingsProvider {
   readonly writable = true
   private document: Record<string, unknown> = {}
 
@@ -74,7 +74,7 @@ describe('real Cordis service composition', () => {
     const text = await modelText(ctx)
     expect(text).toContain('你好 ![开心](')
     const image = /!\[开心\]\(([^)]+)\)/.exec(text)?.[1]
-    expect(image).toContain(`http://127.0.0.1:${String(ctx.httpServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png?v=8`)
+    expect(image).toContain(`http://127.0.0.1:${String(ctx.webServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png?v=8`)
 
     const response = await fetch(String(image))
     expect(response.status).toBe(200)
@@ -130,7 +130,7 @@ describe('real Cordis service composition', () => {
     await fiber.dispose()
     expect(renderPrompt(await context.systemPrompt.assemble())).not.toContain('dsh-emoji:mode=')
     expect(await modelText(context)).toBe('你好 ::开心::')
-    expect((await fetch(`http://127.0.0.1:${String(context.httpServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png`)).status).toBe(404)
+    expect((await fetch(`http://127.0.0.1:${String(context.webServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png`)).status).toBe(404)
   })
 
   it('持久化设置可在关闭、智能与高频之间实时切换', async () => {

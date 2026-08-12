@@ -18,7 +18,7 @@
 
 ## 调整 AI 的表情频率
 
-安装并重启 Web Host 后，打开「设置 → 插件 → dsh-emoji」即可选择：
+安装并重启 Web Host 后，打开「设置 → 插件 → 表情（Whale Emoji）」即可选择：
 
 - `关闭`：移除表情标签协议，该请求的输出不进行标签转写。
 - `智能`：只在轻松、友好且适合表达情绪时使用，默认值。
@@ -53,7 +53,7 @@ corepack pnpm build
 corepack pnpm pack --dry-run
 ```
 
-开发依赖通过 `link:` 指向同级 `../test-hellodigua` 当前 checkout；发布产物自身不依赖这些本地路径，运行时只读取包内 `assets/`。
+开发依赖通过 `link:` 指向同级 `../test-hellodigua` 当前 checkout；发布产物自身不依赖这些本地路径，运行时只读取包内 `assets/`。当前版本面向 DSH `0.0.1-rc.2` 到 `<0.0.2` 的接口，明确不兼容 `rc.1`：设置卡片依赖新版 `dsh-client-ui-settings-plugins`，Host 使用 `webServer` 与 `SettingsProvider`。
 
 ## 使用当前 DSH 源码安装
 

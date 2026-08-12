@@ -54,8 +54,8 @@ export function buildEmojiGuidance(settings: EmojiSettings): string {
 export const EMOJI_GUIDANCE = buildEmojiGuidance(DEFAULT_EMOJI_SETTINGS)
 
 function localEmojiUrl(ctx: Context, emoji: EmojiCatalogEntry): string {
-  const port = ctx.get('httpServer')?.port
-  if (port === undefined) throw new Error('dsh-emoji: httpServer service missing while resolving emoji URL')
+  const port = ctx.get('webServer')?.port
+  if (port === undefined) throw new Error('dsh-emoji: webServer service missing while resolving emoji URL')
   return `http://127.0.0.1:${String(port)}${EMOJI_API_ROOT}/${emoji.platform}/${emoji.file}?v=${EMOJI_ASSET_REVISION}`
 }
 
@@ -117,8 +117,8 @@ export function apply(ctx: Context, config?: EmojiSettings): void {
     })
   })
 
-  ctx.inject(['httpServer'], (scope: Context) => {
-    scope.effect(() => scope.httpServer.register({
+  ctx.inject(['webServer'], (scope: Context) => {
+    scope.effect(() => scope.webServer.register({
       kind: 'prefix',
       path: EMOJI_API_ROOT,
       handler: (request, response) => { handleEmojiAssetRequest(request, response) },

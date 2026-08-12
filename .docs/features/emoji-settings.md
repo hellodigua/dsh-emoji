@@ -2,7 +2,7 @@
 
 ## 目标
 
-让用户从 Web 的「设置 → 插件 → dsh-emoji」调整 AI 使用表情的频率，保存后从下一次模型调用开始生效，不要求重启 Host，也不修改 DSH core。
+让用户从 Web 的「设置 → 插件 → 表情（Whale Emoji）」调整 AI 使用表情的频率，保存后从下一次模型调用开始生效，不要求重启 Host，也不修改 DSH core。
 
 ## 配置模型
 
@@ -17,8 +17,8 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 数据流
 
-1. Host half 通过 `ctx.settings.register()` 注册 `dsh-emoji` 命名空间。
-2. Web Client 在 `settings.plugin.item` 注入配置卡片。
+1. Host half 通过 rc.2 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
+2. Web Client 注入 `dsh-client-ui-settings-plugins`，并在其 `settings.plugin.item` 插槽注册配置卡片。
 3. Client 通过 `/dsh-emoji-settings` 自有 Connection RPC 执行 `get`、`save`、`reset`。
 4. 写入携带 Settings revision；陈旧写入返回 `settings-conflict`，避免覆盖其他标签页的新值。
 5. Host watcher 更新内存设置，并触发 `system-prompt/change`。

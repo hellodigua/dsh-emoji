@@ -3,7 +3,7 @@
 import type { ConnectionRpcHandler } from '@deepseek-ai/dsh-client-connection'
 import type { RpcResult } from '@deepseek-ai/dsh-host-apiproxy/api'
 import {
-  SettingsConflictError, settingsNamespace, type Settings,
+  SettingsConflictError, settingsNamespace, type SettingsProvider,
 } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import {
@@ -64,7 +64,7 @@ function rejected(error: unknown): RpcResult<never> {
 }
 
 /** 读取当前有效值与并发写 revision，供插件设置页使用。 */
-export function describeEmojiSettings(settings: Settings): EmojiSettingsDocument {
+export function describeEmojiSettings(settings: SettingsProvider): EmojiSettingsDocument {
   const descriptor = settings.describe({ redactSecrets: true })
     .find(entry => entry.ns === EMOJI_SETTINGS_NS)
   if (descriptor === undefined) throw new Error('dsh-emoji 设置命名空间尚未注册')
@@ -82,7 +82,7 @@ export function describeEmojiSettings(settings: Settings): EmojiSettingsDocument
  * DSH core 的通用设置白名单；物理通道另由调用方限制为 loopback。
  */
 export function createEmojiSettingsRpcHandler(
-  settings: Settings,
+  settings: SettingsProvider,
   onCommitted?: (value: EmojiSettings) => void,
 ): ConnectionRpcHandler {
   return async (endpoint, payload) => {
