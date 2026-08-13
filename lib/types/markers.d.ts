@@ -3,7 +3,9 @@ import { type EmojiCatalogEntry } from './catalog.ts';
 import type { EmojiMode } from './settings-model.ts';
 /** System prompt 内用于把一次请求绑定到确定频率策略的稳定前缀。 */
 export declare const EMOJI_PROMPT_PREFIX = "[dsh-emoji:mode=";
-/** 提供给模型的完整、有限表情标签词表。 */
+/** 生成不随 UI locale 改变、可持久化到历史消息的稳定 ASCII 标签。 */
+export declare function emojiMarker(emoji: EmojiCatalogEntry): string;
+/** 提供给模型的完整、有限 ASCII 表情标签词表。 */
 export declare const EMOJI_MARKERS: readonly string[];
 type MarkerDirective = 'none' | 'emoji';
 /** 一段文本完成标签转写后的结果。 */

@@ -6,17 +6,22 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import {
-  EMOJI_MODES, MAX_CUSTOM_PROMPT_LENGTH, type EmojiMode,
+  EMOJI_DISPLAY_SIZES, EMOJI_DISPLAY_SIZE_EM, EMOJI_MODES, MAX_CUSTOM_PROMPT_LENGTH,
+  type EmojiDisplaySize, type EmojiMode,
 } from '../settings-model.ts'
 import type {
-  EmojiSettingsController, EmojiSettingsSnapshot,
+  EmojiSettingsController, EmojiSettingsErrorCode, EmojiSettingsSnapshot,
 } from './settings-controller.ts'
-import { EMOJI_LOCALE_NS } from './locales.ts'
+import { EMOJI_LOCALE_NS, type EmojiLocaleKey } from './locales.ts'
 
 export interface EmojiSettingsCardFace {
   hooks: { emojiSettings: EmojiSettingsController }
   editMode: (mode: EmojiMode) => void
+  editDisplaySize: (displaySize: EmojiDisplaySize) => void
   editCustomPrompt: (value: string) => void
+  editActivePack: (packRef: string) => void
+  uploadPack: (file: File) => void
+  removePack: (packRef: string) => void
   save: () => void
   discard: () => void
   reset: () => void
@@ -28,14 +33,46 @@ export type EmojiSettingsCardProps =
   & InjectFace<EmojiSettingsCardFace>
 
 interface ModeCopy {
-  title: string
-  description: string
+  title: EmojiLocaleKey
+  description: EmojiLocaleKey
 }
 
 const MODE_COPY: Record<EmojiMode, ModeCopy> = {
-  off: { title: '关闭', description: '不向 AI 提供表情标签协议，也不转写标签。' },
-  auto: { title: '智能', description: '只在轻松、友好且适合表达情绪时使用。' },
-  frequent: { title: '高频', description: '大多数适合的日常回答都主动使用一张。' },
+  off: { title: 'mode.off.title', description: 'mode.off.description' },
+  auto: { title: 'mode.auto.title', description: 'mode.auto.description' },
+  frequent: { title: 'mode.frequent.title', description: 'mode.frequent.description' },
+}
+
+const SIZE_COPY: Record<EmojiDisplaySize, EmojiLocaleKey> = {
+  small: 'size.small',
+  normal: 'size.normal',
+  large: 'size.large',
+  xlarge: 'size.xlarge',
+}
+
+const ERROR_COPY: Record<EmojiSettingsErrorCode, EmojiLocaleKey> = {
+  loopbackRequired: 'error.loopbackRequired',
+  invalidResponse: 'error.invalidResponse',
+  conflict: 'error.conflict',
+  invalidRequest: 'error.invalidRequest',
+  rejected: 'error.rejected',
+  loadFailed: 'error.loadFailed',
+  saveFailed: 'error.saveFailed',
+  packInvalid: 'error.packInvalid',
+  packTooLarge: 'error.packTooLarge',
+  packConflict: 'error.packConflict',
+  packNotFound: 'error.packNotFound',
+  packActive: 'error.packActive',
+  packWriteFailed: 'error.packWriteFailed',
+  uploadFailed: 'error.uploadFailed',
+  removeFailed: 'error.removeFailed',
+}
+
+const PREVIEW_COPY: Partial<Record<string, EmojiLocaleKey>> = {
+  happy: 'pack.preview.happy',
+  laughing: 'pack.preview.laughing',
+  thinking: 'pack.preview.thinking',
+  celebrate: 'pack.preview.celebrate',
 }
 
 const styles = {
@@ -74,6 +111,12 @@ const styles = {
   },
   promptField: { display: 'flex', flexDirection: 'column', gap: 7, marginTop: 14 },
   promptLabel: { fontSize: 13, lineHeight: '20px', fontWeight: 600 },
+  promptHeading: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  promptExample: {
+    flex: '0 0 auto', border: 0, padding: 0, background: 'none', color: 'var(--dsw-alias-label-secondary)',
+    font: 'inherit', fontSize: 12, lineHeight: '20px', cursor: 'pointer', textDecoration: 'underline',
+    textUnderlineOffset: 3,
+  },
   promptTextarea: {
     boxSizing: 'border-box', width: '100%', minHeight: 112, resize: 'vertical', padding: '9px 10px',
     border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 8, font: 'inherit', fontSize: 13,
@@ -82,6 +125,40 @@ const styles = {
   promptMeta: {
     display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, lineHeight: '17px',
     color: 'var(--dsw-alias-label-tertiary)',
+  },
+  packField: { display: 'flex', flexDirection: 'column', gap: 7, marginTop: 14 },
+  packOptions: {
+    display: 'flex', flexWrap: 'nowrap', gap: 7, overflowX: 'auto', padding: '2px 1px 5px',
+    scrollbarWidth: 'thin',
+  },
+  packOption: {
+    flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 220,
+    padding: '6px 11px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 999,
+    background: 'none', color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer', font: 'inherit',
+  },
+  packOptionSelected: {
+    borderColor: 'var(--dsw-alias-label-primary)',
+    background: 'var(--dsw-alias-bg-module-platform)', color: 'var(--dsw-alias-label-primary)',
+  },
+  packOptionMark: { flex: '0 0 auto', fontSize: 11, lineHeight: '18px' },
+  packOptionName: {
+    display: 'block', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
+    fontSize: 12, lineHeight: '18px', fontWeight: 600, whiteSpace: 'nowrap',
+  },
+  packMeta: { display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 11, color: 'var(--dsw-alias-label-tertiary)' },
+  previews: {
+    boxSizing: 'border-box', display: 'flex', flexWrap: 'nowrap', gap: 8, width: '100%',
+    overflowX: 'auto', padding: '5px 2px 7px', scrollbarWidth: 'thin',
+  },
+  preview: { flex: '0 0 auto', width: 34, height: 34, objectFit: 'contain', borderRadius: 6 },
+  packActions: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 },
+  upload: { position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center' },
+  hiddenFile: { position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' },
+  sizeFieldset: { margin: '14px 0 0', padding: 0, border: 0 },
+  sizeOptions: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 7 },
+  sizePreview: {
+    display: 'block', minHeight: 42, margin: '9px 2px 0', fontSize: 14,
+    lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)', overflow: 'hidden',
   },
   note: { margin: '12px 0 0', fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-tertiary)' },
   status: { margin: '0 0 12px', fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-tertiary)' },
@@ -103,17 +180,21 @@ const styles = {
   },
 } satisfies Record<string, CSSProperties>
 
-function modeSummary(state: EmojiSettingsSnapshot): string {
-  if (state.status === 'loading') return '正在读取设置…'
-  if (state.status === 'unavailable') return '设置暂不可用'
-  return MODE_COPY[state.persisted.mode].title
+function modeSummary(state: EmojiSettingsSnapshot, t: EmojiSettingsCardProps['t']): string {
+  if (state.status === 'loading') return t('summary.loading')
+  if (state.status === 'unavailable') return t('summary.unavailable')
+  return t(MODE_COPY[state.persisted.mode].title)
 }
 
 /** 渲染带暂存、保存、放弃和恢复默认能力的插件卡片。 */
 export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
   const [open, setOpen] = useState(false)
   const state = props.useEmojiSettings(snapshot => snapshot)
-  const editable = state.status === 'ready' && state.writable && !state.saving
+  const editable = state.status === 'ready' && state.writable && !state.saving && !state.packBusy
+  const revisionBlocked = state.error === 'conflict'
+  const selectedPack = state.packs.find(pack => pack.ref === state.draft.activePack)
+  const displaySizeEm = EMOJI_DISPLAY_SIZE_EM[state.draft.displaySize]
+  const displayAlignEm = Number(((1 - displaySizeEm) / 2 - 0.05).toFixed(3))
   const title = props.t('title')
   return (
     <li style={styles.card}>
@@ -121,24 +202,24 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
         type="button"
         style={styles.header}
         aria-expanded={open}
-        aria-label={`${props.t(open ? 'collapse' : 'expand')}：${title}`}
+        aria-label={`${props.t(open ? 'collapse' : 'expand')}: ${title}`}
         onClick={() => { setOpen(!open) }}
       >
         <span style={styles.headText}>
           <span style={styles.title}>{title}</span>
-          <span style={styles.description}>控制 AI 回复中微型表情的使用频率</span>
+          <span style={styles.description}>{props.t('description')}</span>
         </span>
-        {state.dirty ? <span style={styles.badge}>未保存</span> : null}
-        <span style={styles.badge}>{modeSummary(state)}</span>
+        {state.dirty ? <span style={styles.badge}>{props.t('unsaved')}</span> : null}
+        <span style={styles.badge}>{modeSummary(state, props.t)}</span>
         <span aria-hidden="true">{open ? '⌃' : '⌄'}</span>
       </button>
       {open
         ? (
           <div style={styles.body}>
-            {state.status === 'loading' ? <p style={styles.status}>正在从 Host 读取配置…</p> : null}
-            {state.status === 'unavailable' ? <p style={styles.status}>当前页面不能读取或修改此配置。</p> : null}
+            {state.status === 'loading' ? <p style={styles.status}>{props.t('status.loading')}</p> : null}
+            {state.status === 'unavailable' ? <p style={styles.status}>{props.t('status.unavailable')}</p> : null}
             <fieldset style={styles.fieldset} disabled={!editable}>
-              <legend style={styles.legend}>回复策略</legend>
+              <legend style={styles.legend}>{props.t('policy.legend')}</legend>
               <div style={styles.modeOptions}>
                 {EMOJI_MODES.map((mode) => {
                   const selected = state.draft.mode === mode
@@ -159,39 +240,208 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                         checked={selected}
                         onChange={() => { props.editMode(mode) }}
                       />
-                      <span style={styles.modeTitle}>{MODE_COPY[mode].title}</span>
+                      <span style={styles.modeTitle}>{props.t(MODE_COPY[mode].title)}</span>
                     </label>
                   )
                 })}
               </div>
               <p style={styles.modeDescription} aria-live="polite">
-                {MODE_COPY[state.draft.mode].description}
+                {props.t(MODE_COPY[state.draft.mode].description)}
               </p>
             </fieldset>
-            <label style={styles.promptField}>
-              <span style={styles.promptLabel}>自定义提示词</span>
+            <section style={styles.packField} aria-labelledby="dsh-emoji-pack-label">
+              <span id="dsh-emoji-pack-label" style={styles.promptLabel}>{props.t('pack.label')}</span>
+              <div
+                role="radiogroup"
+                aria-labelledby="dsh-emoji-pack-label"
+                aria-orientation="horizontal"
+                style={styles.packOptions}
+              >
+                {state.packs.map((pack, index) => {
+                  const selected = pack.ref === state.draft.activePack
+                  const optionId = `dsh-emoji-pack-option-${String(index)}`
+                  return (
+                    <button
+                      key={pack.ref}
+                      id={optionId}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      tabIndex={selected ? 0 : -1}
+                      disabled={!editable}
+                      title={`${pack.name} · ${pack.version}${pack.builtIn ? ` · ${props.t('pack.builtin')}` : ''}`}
+                      style={{
+                        ...styles.packOption,
+                        ...(selected ? styles.packOptionSelected : {}),
+                        ...(!editable ? styles.modeDisabled : {}),
+                      }}
+                      onClick={() => { props.editActivePack(pack.ref) }}
+                      onKeyDown={(event) => {
+                        if (!editable || state.packs.length < 2) return
+                        const last = state.packs.length - 1
+                        let next: number | undefined
+                        if (event.key === 'ArrowRight') next = index === last ? 0 : index + 1
+                        if (event.key === 'ArrowLeft') next = index === 0 ? last : index - 1
+                        if (event.key === 'Home') next = 0
+                        if (event.key === 'End') next = last
+                        if (next === undefined) return
+                        event.preventDefault()
+                        props.editActivePack(state.packs[next]!.ref)
+                        requestAnimationFrame(() => {
+                          document.getElementById(`dsh-emoji-pack-option-${String(next)}`)?.focus()
+                        })
+                      }}
+                    >
+                      {selected ? <span aria-hidden="true" style={styles.packOptionMark}>✓</span> : null}
+                      <span style={styles.packOptionName}>{pack.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {selectedPack !== undefined
+                ? (
+                  <div
+                    id="dsh-emoji-pack-panel"
+                    role="region"
+                    aria-labelledby={`dsh-emoji-pack-option-${String(state.packs.indexOf(selectedPack))}`}
+                  >
+                    <span style={styles.packMeta}>
+                      <span>{props.t('pack.emojiCount')}: {selectedPack.emojiCount}</span>
+                      <span>{selectedPack.id}@{selectedPack.version}</span>
+                    </span>
+                    <div style={styles.previews}>
+                      {selectedPack.previews.map((preview) => {
+                        const copy = PREVIEW_COPY[preview.key]
+                        const label = copy === undefined ? preview.label : props.t(copy)
+                        return (
+                          <img
+                            key={preview.key}
+                            src={preview.url}
+                            alt={label}
+                            title={label}
+                            data-dsh-emoji-pack-preview="true"
+                            style={styles.preview}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+                : null}
+              <span style={styles.packActions}>
+                <label style={{ ...styles.button, ...styles.upload, ...(!editable ? styles.modeDisabled : {}) }}>
+                  {props.t(state.packBusy ? 'pack.uploading' : 'pack.upload')}
+                  <input
+                    type="file"
+                    accept=".zip,application/zip"
+                    disabled={!editable}
+                    style={styles.hiddenFile}
+                    onChange={(event) => {
+                      const file = event.currentTarget.files?.[0]
+                      if (file !== undefined) props.uploadPack(file)
+                      event.currentTarget.value = ''
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  style={styles.button}
+                  disabled={!editable || selectedPack === undefined || selectedPack.builtIn || selectedPack.ref === state.persisted.activePack}
+                  onClick={() => { if (selectedPack !== undefined) props.removePack(selectedPack.ref) }}
+                >
+                  {props.t('pack.remove')}
+                </button>
+              </span>
+              <span style={styles.description}>{props.t('pack.help')}</span>
+            </section>
+            <fieldset style={styles.sizeFieldset} disabled={!editable}>
+              <legend style={styles.legend}>{props.t('size.legend')}</legend>
+              <div style={styles.sizeOptions}>
+                {EMOJI_DISPLAY_SIZES.map((displaySize) => {
+                  const selected = state.draft.displaySize === displaySize
+                  return (
+                    <label
+                      key={displaySize}
+                      title={`${String(EMOJI_DISPLAY_SIZE_EM[displaySize])}em`}
+                      style={{
+                        ...styles.mode,
+                        ...(selected ? styles.modeSelected : {}),
+                        ...(!editable ? styles.modeDisabled : {}),
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="dsh-emoji-display-size"
+                        value={displaySize}
+                        style={styles.modeRadio}
+                        checked={selected}
+                        onChange={() => { props.editDisplaySize(displaySize) }}
+                      />
+                      <span style={styles.modeTitle}>{props.t(SIZE_COPY[displaySize])}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <p style={styles.sizePreview} aria-live="polite">
+                <span>{props.t('size.preview.before')}</span>
+                {selectedPack?.previews[0] !== undefined
+                  ? (
+                    <img
+                      src={selectedPack.previews[0].url}
+                      alt={selectedPack.previews[0].label}
+                      style={{
+                        display: 'inline-block', width: `${String(displaySizeEm)}em`,
+                        height: `${String(displaySizeEm)}em`, margin: '0 0.08em',
+                        verticalAlign: `${String(displayAlignEm)}em`, objectFit: 'contain',
+                      }}
+                    />
+                  )
+                  : null}
+                <span>{props.t('size.preview.after')}</span>
+              </p>
+            </fieldset>
+            <div style={styles.promptField}>
+              <div style={styles.promptHeading}>
+                <label htmlFor="dsh-emoji-custom-prompt" style={styles.promptLabel}>{props.t('prompt.label')}</label>
+                {state.draft.customPrompt.length === 0
+                  ? (
+                    <button
+                      type="button"
+                      style={styles.promptExample}
+                      disabled={!editable}
+                      onClick={() => { props.editCustomPrompt(props.t('prompt.example')) }}
+                    >
+                      {props.t('action.usePromptExample')}
+                    </button>
+                  )
+                  : null}
+              </div>
               <textarea
+                id="dsh-emoji-custom-prompt"
                 value={state.draft.customPrompt}
                 maxLength={MAX_CUSTOM_PROMPT_LENGTH}
                 disabled={!editable}
                 rows={5}
                 style={styles.promptTextarea}
-                placeholder="例如：根据语境选择表情，并放在最相关的句子后。"
+                placeholder={props.t('prompt.placeholder')}
                 onChange={event => { props.editCustomPrompt(event.currentTarget.value) }}
               />
               <span style={styles.promptMeta}>
-                <span>用于控制表情的选择、语气、插入位置和需要跳过表情的场景；协议与合法标签由插件保留。</span>
+                <span>{props.t('prompt.help')}</span>
                 <span>{state.draft.customPrompt.length}/{MAX_CUSTOM_PROMPT_LENGTH}</span>
               </span>
-            </label>
-            <p style={styles.note}>当前版本一轮最多插入一张表情。</p>
-            {state.error !== undefined ? <p role="status" style={styles.error}>{state.error}</p> : null}
-            {state.saved ? <p role="status" style={styles.saved}>设置已保存，并会从下一次模型调用开始生效。</p> : null}
+            </div>
+            <p style={styles.note}>{props.t('limit.note')}</p>
+            {state.error !== undefined ? <p role="status" style={styles.error}>{props.t(ERROR_COPY[state.error])}</p> : null}
+            {state.saved ? <p role="status" style={styles.saved}>{props.t('status.saved')}</p> : null}
+            {state.packNotice !== undefined
+              ? <p role="status" style={styles.saved}>{props.t(state.packNotice === 'uploaded' ? 'status.packUploaded' : 'status.packRemoved')}</p>
+              : null}
             <div style={styles.footer}>
-              <button type="button" style={styles.button} disabled={!editable} onClick={props.reset}>恢复默认</button>
-              <button type="button" style={styles.button} disabled={!editable || !state.dirty} onClick={props.discard}>放弃修改</button>
-              <button type="button" style={styles.save} disabled={!editable || !state.dirty} onClick={props.save}>
-                {state.saving ? '保存中…' : '保存'}
+              <button type="button" style={styles.button} disabled={!editable || revisionBlocked} onClick={props.reset}>{props.t('action.reset')}</button>
+              <button type="button" style={styles.button} disabled={!editable || !state.dirty} onClick={props.discard}>{props.t('action.discard')}</button>
+              <button type="button" style={styles.save} disabled={!editable || !state.dirty || revisionBlocked} onClick={props.save}>
+                {props.t(state.saving ? 'action.saving' : 'action.save')}
               </button>
             </div>
           </div>

@@ -4,7 +4,7 @@
 
 ![dsh-emoji 蓝鲸表情包](assets/readme/banner.png)
 
-`dsh-emoji` 是 DeepSeek Harness 的 Profile Bundle，让 Agent 在正文中输出受控情绪标签，再由 Host 确定性转成微型 Markdown 图片。当前只支持 Web Assistant 回复，内置 40 张透明背景的正面鲸鱼二创表情，不修改 DSH core。
+`dsh-emoji` 是 DeepSeek Harness 的 Profile Bundle，让 Agent 在正文中输出受控 ASCII marker，再由 Host 确定性转成行内 Markdown 图片。`0.2.0` 支持上传遵循标准 40 个语义 key 的自定义表情包；当前只处理 Web Assistant 回复，不修改 DSH core。
 
 ## 效果预览
 
@@ -12,10 +12,10 @@
 
 ## 工作方式
 
-- system prompt 向模型提供 catalog 中的 40 个合法标签，例如 `::开心::`、`::思考::`、`::庆祝::`、`::抱歉::`、`::鼓掌::`。
+- system prompt 使用英文技术默认值，向模型提供 40 个不随 UI locale 改变的合法 marker，例如 `::emoji:happy::`、`::emoji:thinking::`、`::emoji:celebrate::`、`::emoji:sorry::`、`::emoji:applause::`，同时附带中英文语义说明。
 - Host 包装 Agent 的 LLM 流，在最终 text block 关闭时把合法标签确定性映射为素材 Markdown；该过程不产生 Function Call 或第二次模型请求。
-- Host 通过 `/api/dsh-emoji/assets/deepseek/<file>.png` 提供包内图片。
-- Web Client 只覆盖上述路由的 `<img>`，显示为 `2em` 的行内元素。
+- Host 通过 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 提供带表情包版本的不可变图片；`0.1.x` 已写入历史消息的 `/deepseek/<file>.png` 地址继续兼容。
+- Web Client 只覆盖上述路由的 `<img>`，支持小、正常、偏大、大四档行内尺寸；默认“正常”为 `1.5em`。
 - 转写器只处理 Markdown 普通文本，跳过行内代码、围栏代码和未知标签，并在程序层限制一回合最多一张。
 
 ## 调整 AI 的表情频率
@@ -26,11 +26,53 @@
 - `智能`：只在轻松、友好且适合表达情绪时使用，默认值。
 - `高频`：提示 AI 在大多数适合的日常回答中主动使用一张。
 
-还可以在“自定义提示词”文本框中调整表情的选择、语气、插入位置和需要跳过表情的场景。插件不预设“严肃内容跳过”等业务规则；需要时由用户直接写入自定义提示词。保存后无需重启，从下一次模型调用开始生效；配置持久化到 DSH Settings 文档，默认是 `~/.dsh/settings.yaml` 的 `dsh-emoji` 段。
+设置卡片完整支持中文和英文，并跟随 DSH 当前界面语言。还可以在“附加提示词（可选）”文本框中调整表情的选择、语气、插入位置和需要跳过表情的场景；留空时继续使用内置规则，空白状态可一键填入本地化示例再继续编辑。插件不预设“严肃内容跳过”等业务规则，示例只有在用户主动填入并保存后才会生效。保存后无需重启，从下一次模型调用开始生效；配置持久化到 DSH Settings 文档，默认是 `~/.dsh/settings.yaml` 的 `dsh-emoji` 段。
 
-自定义提示词最多 4000 字符，可以清空。插件仍会独立保留模式标记、合法标签清单、只处理面向用户正文和一回合最多一张等协议约束，避免误删关键规则后导致转写失效。
+自定义提示词默认留空，最多 4000 字符；英文内置策略与 marker 协议不写入持久化配置。插件始终独立保留模式标记、合法 marker 清单、只处理面向用户正文和一回合最多一张等协议约束，避免误删关键规则后导致转写失效。Host RPC 使用稳定错误码和英文 wire message，设置卡片再按 DSH 当前语言显示错误。
 
 `智能` 与 `高频` 是否选择标签仍取决于模型。插件不会在模型没有选择表情时自动补图；用户可通过自定义提示词定义需要跳过表情的场景。
+
+## 上传自己的表情包
+
+在同一张设置卡片中点击“上传 ZIP”。上传成功后选择新表情包并保存，下一次模型调用立即使用，无需重启。自定义包复用内置的 40 个稳定语义 key，因此 AI 仍输出 `::emoji:happy::` 等 marker，只替换最终图片，不需要重新猜测每套素材的含义。
+
+ZIP 可以直接包含下列文件，也可以再包一层同名目录：
+
+```text
+my-whale.zip
+├── pack.json
+└── images/
+    ├── happy.png
+    ├── sad.png
+    ├── thinking.png
+    ├── celebrate.png
+    └── ...其余标准 key
+```
+
+`pack.json` 格式：
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "my-whale",
+  "name": "我的鲸鱼表情",
+  "version": "1.0.0"
+}
+```
+
+40 个文件名 key 是：
+
+```text
+happy, sad, confused, watching, angry, speechless, doge, overloaded,
+neutral, laughing, crying, sweating, thinking, okay, nodding, sleeping,
+hurt, peeking, approve, heart, shy, star-eyes, laugh-cry, touched,
+scared, facepalm, eye-roll, sigh, frustrated, playful, snickering,
+sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
+```
+
+每个 key 必须且只能提供一个同名 `.png`。`id` 使用小写字母、数字和连字符，`version` 使用 SemVer；同一个 `id@version` 的内容不可覆盖，更新素材时必须提升版本。ZIP 上限 20 MiB，解压后上限 80 MiB，单文件上限 2 MiB，图片宽高均不得超过 512 像素；路径逃逸、额外文件、缺失 key、伪造格式和同版本冲突都会被拒绝。
+
+用户包保存在 `$DSH_HOME/emoji-packs/`（默认 `~/.dsh/emoji-packs/`），Settings 只保存当前 `id@version`。从选择列表“移除”不会物理删除素材字节，因此历史消息里的版本化 URL 仍能回放；重新上传完全相同的 ZIP 可以恢复该版本。
 
 ## 重新切分鲸鱼表情
 
@@ -80,7 +122,7 @@ node --import tsx/esm apps/cli/src/bin.ts plugin --profile web remove -w \
 - TUI 不显示 Web Client 样式。
 - 一轮最多一张表情；暂不支持“隔几句话一张”的多图策略。
 - 自定义提示词中的表情偏好和跳过场景依赖模型遵循，不提供程序兜底。
-- 模型流式生成标签时，原始标签可能短暂显示，并在 text block 完成后替换为图片。
-- 回复中保存的是带当前 Host 端口的绝对 loopback URL；改变端口或远程访问时，旧消息图片会失效。
+- 模型流式生成 marker 时，原始 `::emoji:<key>::` 可能短暂显示，并在 text block 完成后替换为图片。
+- 回复中保存的是带当前 Host 端口的绝对 loopback URL；表情包版本可以稳定回放，但改变端口或远程访问时，旧消息图片仍会失效。
 - 表情链路本身不产生工具卡片；Agent 的其他普通工具调用仍按 DSH 默认方式展示。
 - 总览图及其二创素材的公开分发范围仍需由素材提供者确认，见 [ASSETS.md](ASSETS.md)。

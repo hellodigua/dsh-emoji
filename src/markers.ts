@@ -5,8 +5,13 @@ import type { EmojiMode } from './settings-model.ts'
 /** System prompt 内用于把一次请求绑定到确定频率策略的稳定前缀。 */
 export const EMOJI_PROMPT_PREFIX = '[dsh-emoji:mode='
 
-/** 提供给模型的完整、有限表情标签词表。 */
-export const EMOJI_MARKERS = Object.freeze(EMOJIS.map(emoji => `::${emoji.name}::`))
+/** 生成不随 UI locale 改变、可持久化到历史消息的稳定 ASCII 标签。 */
+export function emojiMarker(emoji: EmojiCatalogEntry): string {
+  return `::emoji:${emoji.key}::`
+}
+
+/** 提供给模型的完整、有限 ASCII 表情标签词表。 */
+export const EMOJI_MARKERS = Object.freeze(EMOJIS.map(emojiMarker))
 
 type MarkerDirective = 'none' | 'emoji'
 
@@ -25,9 +30,11 @@ export interface EmojiStreamRewriteOptions {
   readonly imageUrl: (emoji: EmojiCatalogEntry) => string
 }
 
-const emojiByName = new Map<string, EmojiCatalogEntry>(EMOJIS.map(emoji => [emoji.name, emoji]))
+const emojiByMarkerBody = new Map<string, EmojiCatalogEntry>(
+  EMOJIS.map(emoji => [`emoji:${emoji.key}`, emoji]),
+)
 function markdownImage(emoji: EmojiCatalogEntry, imageUrl: (emoji: EmojiCatalogEntry) => string): string {
-  return `![${emoji.name}](${imageUrl(emoji)})`
+  return `![${emoji.labels.en}](${imageUrl(emoji)})`
 }
 
 function isEscaped(text: string, index: number): boolean {
@@ -58,8 +65,8 @@ function rewritePlainText(
     if (inlineCodeTicks.value === 0 && text.startsWith('::', index) && !isEscaped(text, index)) {
       const close = text.indexOf('::', index + 2)
       if (close !== -1) {
-        const marker = text.slice(index + 2, close)
-        const emoji = emojiByName.get(marker)
+        const markerBody = text.slice(index + 2, close)
+        const emoji = emojiByMarkerBody.get(markerBody)
         if (emoji !== undefined) {
           if (state.directive === 'none') {
             state.directive = 'emoji'

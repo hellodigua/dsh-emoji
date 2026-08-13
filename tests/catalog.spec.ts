@@ -12,8 +12,12 @@ describe('DeepSeek whale emoji catalog', () => {
   it('固定完整版正面鲸鱼源图 SHA-256，并包含完整 40 张切片素材', () => {
     expect(CATALOG_SOURCE_REVISION).toBe('sha256:3b87fa433ca1ab058a4dcbc020f7e6d8e6c174a1c3587d649a2020544b67e3be')
     expect(EMOJIS).toHaveLength(40)
-    expect(EMOJIS[0]).toMatchObject({ id: 'deepseek:ds_01', name: '开心', file: 'ds_01.png' })
-    expect(EMOJIS.at(-1)).toMatchObject({ id: 'deepseek:ds_40', name: '鼓掌', file: 'ds_40.png' })
+    expect(EMOJIS[0]).toMatchObject({
+      id: 'deepseek:ds_01', key: 'happy', labels: { en: 'Happy', zh: '开心' }, file: 'ds_01.png',
+    })
+    expect(EMOJIS.at(-1)).toMatchObject({
+      id: 'deepseek:ds_40', key: 'applause', labels: { en: 'Applause', zh: '鼓掌' }, file: 'ds_40.png',
+    })
     expect(EMOJIS.map(emoji => emoji.id)).toEqual(
       Array.from({ length: 40 }, (_, index) => `deepseek:ds_${String(index + 1).padStart(2, '0')}`),
     )
@@ -21,12 +25,16 @@ describe('DeepSeek whale emoji catalog', () => {
 
   it('保持 id、文件名唯一且元数据完整', () => {
     const ids = EMOJIS.map(emoji => emoji.id)
+    const keys = EMOJIS.map(emoji => emoji.key)
     const files = EMOJIS.map(emoji => emoji.file)
     expect(new Set(ids).size).toBe(EMOJIS.length)
+    expect(new Set(keys).size).toBe(EMOJIS.length)
     expect(new Set(files).size).toBe(EMOJIS.length)
     for (const emoji of EMOJIS) {
       expect(emoji.platform).toBe('deepseek')
-      expect(emoji.name.length).toBeGreaterThan(0)
+      expect(emoji.key).toMatch(/^[a-z][a-z0-9-]*$/)
+      expect(emoji.labels.en.length).toBeGreaterThan(0)
+      expect(emoji.labels.zh.length).toBeGreaterThan(0)
       expect(emoji.tags.length).toBeGreaterThan(0)
       expect(emoji.keywords.length).toBeGreaterThan(0)
       expect(emojiById(emoji.id)).toBe(emoji)

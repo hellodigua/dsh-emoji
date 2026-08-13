@@ -1,9 +1,9 @@
 {
   "name": "@dsh-external/dsh-emoji",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "DSH Agent 回复中的语义化微型行内表情插件",
+  "description": "Tiny semantic inline emoji for DSH Agent responses",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {
@@ -86,6 +86,7 @@
     "@deepseek-ai/dsh-system-prompt": "link:../test-hellodigua/packages/core/system-prompt",
     "@deepseek-ai/schemastery": "link:../test-hellodigua/vendor/schemastery",
     "@types/node": "^24.0.0",
+    "@types/pngjs": "6.0.5",
     "@types/react": "~18.3.1",
     "jsdom": "^26.1.0",
     "react": "^18.2.0",
@@ -93,5 +94,9 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "fflate": "0.8.3",
+    "pngjs": "7.0.0"
+  }
 }

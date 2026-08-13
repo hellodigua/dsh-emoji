@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { EMOJI_API_ROOT, handleEmojiAssetRequest } from '../src/assets.ts'
+import { EmojiPackStore } from '../src/packs.ts'
 
 const servers = new Set<ReturnType<typeof createServer>>()
 const tempRoots = new Set<string>()
@@ -16,8 +17,9 @@ afterEach(async () => {
   tempRoots.clear()
 })
 async function serve(assetRoot?: string): Promise<string> {
+  const packs = new EmojiPackStore({ ...(assetRoot === undefined ? {} : { builtinRoot: assetRoot }) })
   const server = createServer((request, response) => {
-    if (!handleEmojiAssetRequest(request, response, assetRoot)) {
+    if (!handleEmojiAssetRequest(request, response, packs)) {
       response.writeHead(418); response.end('foreign route')
     }
   })
@@ -32,7 +34,7 @@ async function serve(assetRoot?: string): Promise<string> {
 describe('emoji asset route', () => {
   it('以 PNG 和不可变缓存头提供 catalog 白名单素材', async () => {
     const base = await serve()
-    const response = await fetch(`${base}${EMOJI_API_ROOT}/deepseek/ds_01.png?v=8`)
+    const response = await fetch(`${base}${EMOJI_API_ROOT}/deepseek/8/ds_01.png`)
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('image/png')
     expect(response.headers.get('cache-control')).toBe('public, max-age=86400, immutable')
@@ -41,6 +43,7 @@ describe('emoji asset route', () => {
 
   it.each([
     '/deepseek/ds_99.png',
+    '/deepseek/8/ds_99.png',
     '/douyin/ds_01.png',
     '/deepseek/../ds_01.png',
     '/deepseek/%2e%2e%2fds_01.png',
@@ -57,7 +60,7 @@ describe('emoji asset route', () => {
     const emptyRoot = await mkdtemp(join(tmpdir(), 'dsh-emoji-assets-'))
     tempRoots.add(emptyRoot)
     const base = await serve(emptyRoot)
-    const response = await fetch(`${base}${EMOJI_API_ROOT}/deepseek/ds_01.png`)
+    const response = await fetch(`${base}${EMOJI_API_ROOT}/deepseek/8/ds_01.png`)
     expect(response.status).toBe(404)
   })
 

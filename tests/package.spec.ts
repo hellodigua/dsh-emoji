@@ -4,6 +4,12 @@ import { describe, expect, it } from 'vitest'
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
 describe('Profile Bundle package', () => {
+  it('以 0.2.0 发布用户表情包能力，并固定 ZIP 解码依赖', () => {
+    expect(packageJson.version).toBe('0.2.0')
+    expect(packageJson.dependencies.fflate).toBe('0.8.3')
+    expect(packageJson.dependencies.pngjs).toBe('7.0.0')
+  })
+
   it('同时声明 Bundle 和当前 Web Client manifest', () => {
     expect(packageJson.dsh.bundle.patch).toBe('./cordis.patch.yml')
     expect(packageJson.dsh.client.platform).toBe('web')
@@ -41,7 +47,8 @@ describe('Profile Bundle package', () => {
     const runtimeFiles = [
       '../src/index.ts', '../src/assets.ts', '../src/catalog.ts', '../src/search.ts',
       '../src/markers.ts', '../src/settings.ts', '../src/settings-model.ts', '../src/client/index.ts',
-      '../src/client/settings-controller.ts', '../src/client/EmojiSettingsCard.tsx',
+      '../src/pack-model.ts', '../src/packs.ts', '../src/client/settings-controller.ts',
+      '../src/client/EmojiSettingsCard.tsx',
     ]
     for (const file of runtimeFiles) {
       const source = readFileSync(new URL(file, import.meta.url), 'utf8')

@@ -22,13 +22,17 @@ describe('emoji semantic search', () => {
     ['抱歉，这次确实是我的错', 'deepseek:ds_37'],
     ['拜托了，请帮帮忙', 'deepseek:ds_39'],
     ['送上掌声，为你鼓掌', 'deepseek:ds_40'],
+    ['a happy and friendly welcome', 'deepseek:ds_01'],
+    ['time to celebrate this success', 'deepseek:ds_34'],
+    ['thanks for the help', 'deepseek:ds_36'],
   ])('将“%s”稳定匹配到 %s', (query, expected) => {
     expect(searchEmoji(query)?.emoji.id).toBe(expected)
     expect(searchEmoji(query)?.emoji.id).toBe(expected)
   })
 
-  it('优先精确名称，并用目录顺序稳定打破同分', () => {
+  it('优先精确中英文标签，并用目录顺序稳定打破同分', () => {
     expect(searchEmoji('难过')?.emoji.id).toBe('deepseek:ds_02')
+    expect(searchEmoji('Sad')?.emoji.id).toBe('deepseek:ds_02')
     expect(searchEmoji('doge')?.emoji.id).toBe('deepseek:ds_07')
     expect(searchEmoji('鼓掌')?.emoji.id).toBe('deepseek:ds_40')
   })

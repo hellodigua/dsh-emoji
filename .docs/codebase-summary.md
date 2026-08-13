@@ -2,12 +2,12 @@
 
 ## 运行时主链路
 
-1. `src/index.ts` 根据实时 Settings 生成带 `[dsh-emoji:mode=…]` 的 system prompt，将用户可编辑的 `customPrompt` 夹在策略与不可编辑协议约束之间，并列出 catalog 中全部合法情绪标签。
-2. Agent 在面向用户的自然语言正文中，根据用户提示自主决定是否使用表情，并选择表情与恰当位置，最多输出一个 `::名称::`。
+1. `src/index.ts` 根据实时 Settings 生成带 `[dsh-emoji:mode=…]` 的英文 canonical system prompt，将用户可编辑的 `customPrompt` 夹在频率策略与不可编辑协议约束之间；marker 模板只声明一次，catalog 以 `key=English/中文` 紧凑目录提供全部合法 key。
+2. Agent 在面向用户的自然语言正文中，根据用户提示自主决定是否使用表情，并选择表情与恰当位置，最多输出一个不随 UI locale 改变的 ASCII marker。
 3. `src/index.ts` 用 global 监听跨过运行时 scope filter，并以无辅助 `purpose` + 私有模式标记界定主请求；`src/markers.ts` 在 text block 结束时转写合法标签。代码围栏、行内代码和未知标签不改写。
-4. 转写结果引用当前 Host 的 `/api/dsh-emoji/assets/deepseek/ds_XX.png?v=8` 绝对 loopback URL。
-5. `src/assets.ts` 通过 DSH rc.2 的 `webServer` 服务注册路由，用 catalog 做白名单查询并从包内 `assets/emoji/deepseek/` 返回 PNG。
-6. `src/client/index.ts` 依赖 `dsh-client-ui-settings-plugins` 提供的 `settings.plugin.item` 插槽，并只对 dsh-emoji 路由图片应用 `2em` 行内样式。
+4. 转写请求开始时固定当前 `activePack`；结果引用当前 Host 的 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 绝对 loopback URL，缺失包 fail closed 回退内置 `deepseek@8`。
+5. `src/packs.ts` 索引内置包和 `$DSH_HOME/emoji-packs/` 用户包；`src/assets.ts` 通过 DSH rc.2 的 `webServer` 服务注册路由并只提供索引白名单内的 PNG。v0.1 的两段式内置 URL 继续兼容。
+6. `src/client/index.ts` 依赖 `dsh-client-ui-settings-plugins` 提供的 `settings.plugin.item` 插槽，并只对 dsh-emoji 路由图片应用可配置的四档行内尺寸；默认 `normal` 为 `1.5em`，基线偏移随档位计算。
 
 ## 素材链路
 
@@ -15,12 +15,13 @@
 - `scripts/slice-deepseek-sheet.py` 按 SHA-256 选择每张图专用的单元格，避开标题和编号，再以颜色种子、连通区域与封闭背景填充提取主体。
 - 生成物统一为 40 张 `128×128 RGBA PNG`，ID 与总览图中的 1～40 编号严格一致，不保留旧测试版的编号兼容。侧身蓝鲸系列已从运行时目录和 catalog 删除。
 - `package.json#files` 只发布 `assets/emoji/deepseek`；旧 Bilibili 素材不进入当前包。
+- 用户 ZIP 实现相同 40 key，不进入 npm 包或 Settings；通过临时目录完整校验后原子安装到 `$DSH_HOME/emoji-packs/<id>/<version>/`。移除只隐藏列表并保留版本素材供历史回放。
 
 ## 配置链路
 
-- `src/settings-model.ts` 定义 Host/Client 共用文档与 RPC 契约，包括关闭、智能、高频三档模式和最多 4000 字符的 `customPrompt`；跳过场景不设独立开关，由提示词统一定义。
-- `src/settings.ts` 通过 rc.2 的 `SettingsProvider` 注册 Settings namespace，并提供 loopback-only 的 get/save/reset RPC。
-- `src/client/settings-controller.ts` 管理 revision、草稿和网络竞态；`EmojiSettingsCard.tsx` 负责展示。
+- `src/settings-model.ts` 定义 Host/Client 共用文档与 RPC 契约，包括关闭、智能、高频三档模式、默认留空的 `customPrompt`、默认 `deepseek@8` 的 `activePack` 和 Host 维护的包目录 `packRevision`；内置英文策略不进入持久化设置。
+- `src/settings.ts` 通过 rc.2 的 `SettingsProvider` 注册 Settings namespace，并提供 loopback-only 的 get/save/reset RPC；wire message 使用英文 canonical 文案，客户端依赖稳定错误码而不是 message。
+- `src/client/settings-controller.ts` 管理 revision、草稿、网络竞态和有限错误状态；`locales.ts` 以英文定义完整键集合并检查中文翻译等价，`EmojiSettingsCard.tsx` 的全部可见文案都通过 locale seat 展示。附加提示词留空时保留内置规则，并可把当前 UI locale 的推荐示例一键写入草稿，不自动持久化。
 - 设置 watcher 触发 `system-prompt/change`，下一次模型请求读取新模式与自定义提示词，无需重启。
 
 ## 关键验证
@@ -28,7 +29,8 @@
 - `tests/markers.spec.ts`：标签、Markdown 边界、重复限制和无标签行为。
 - `tests/integration.spec.ts`：真实 Cordis、LLM 流、跨 scope/树外模块身份、辅助调用隔离、临时端口素材 URL与设置热更新。
 - `tests/catalog.spec.ts`、`tests/assets.spec.ts`：catalog/磁盘一致性和路由白名单。
-- `tests/client.spec.ts`、`tests/settings.spec.ts`：Web 样式与设置交互。
+- `tests/client.spec.ts`、`tests/settings.spec.ts`：Web 样式、完整双语字典、错误码收敛与设置交互。
+- `tests/packs.spec.ts`：ZIP、图片、路径、体积、不可变安装、软移除、重启与磁盘 manifest 安全。
 - `tests/package.spec.ts`：Profile Bundle 和发布白名单。
 
 完整交付检查：`pnpm typecheck`、`pnpm test`、`pnpm build`、`pnpm pack --dry-run`、`git diff --check`。

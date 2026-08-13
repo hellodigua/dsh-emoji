@@ -17,3 +17,11 @@ SHA-256：3b87fa433ca1ab058a4dcbc020f7e6d8e6c174a1c3587d649a2020544b67e3be
 旧的 `assets/emoji/bilibili/` 与 `src/catalog.generated.ts` 暂作为迁移参考保留，不进入当前运行时 catalog，也不在 `package.json#files` 的发布白名单中。
 
 代码采用 MIT。代码许可证不声明也不推定总览图、鲸鱼形象或二创表情素材的所有权与再分发许可。将仓库转为 public、发布 npm 包或以其他方式公开分发素材前，应由素材提供者确认来源、权利人和允许的分发范围。
+
+## 形象参考图来源核验（2026-08-13）
+
+素材提供者补充了一张用于说明形象参考来源的 `140×140 RGBA PNG`（SHA-256：`a41e6652b8ef3527a7f4b00340613dc0d6f915f3208b31e73cbf6bad0ef4ca23`）。该图片描绘黑白虎鲸、圆眼和张嘴姿态，不是当前包内置的 40 张输出图；文件本身也没有可用的作者、版权或来源元数据。
+
+已使用 Google Lens、Bing Visual Search、百度识图、Yandex Images 和搜狗识图核对公开网络。Google 与 Bing 的精确匹配入口均未找到包含原图的页面，搜狗没有返回相似图片；其他结果只按“卡通虎鲸”外形给出候选。Google 的 CoCosToy 候选、Bing 的 LINE 商品 `Moving Naughty whale`，以及名古屋鲸八官方吉祥物[グランパスくん](https://www.nagoya-grampus.jp/fan/mascot/)和其[官方 LINE 贴纸](https://store.line.me/stickershop/product/1270997/ja)经官方图片比对后均与参考图不一致。
+
+因此目前不能确认该参考图的角色名、作者或权利人，也不能把上述相似候选写成归属结论。公开发布前的素材门槛保持不变：需要由素材提供者补充原始获取页面、原文件／完整表情包，或获得权利人许可；在此之前只能把当前 40 张素材视为来源与授权待确认的二创资产。

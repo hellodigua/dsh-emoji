@@ -1,17 +1,23 @@
 /** dsh-emoji 设置卡片的浏览器状态控制器。 */
 import type { ClientConnectionRpc } from '@deepseek-ai/dsh-client-connection/client';
-import { type EmojiMode, type EmojiSettings } from '../settings-model.ts';
+import { type EmojiMode, type EmojiDisplaySize, type EmojiSettings } from '../settings-model.ts';
+import { type EmojiPackSummary } from '../pack-model.ts';
 export type EmojiSettingsStatus = 'loading' | 'ready' | 'unavailable';
+export type EmojiSettingsErrorCode = 'loopbackRequired' | 'invalidResponse' | 'conflict' | 'invalidRequest' | 'rejected' | 'loadFailed' | 'saveFailed' | 'packInvalid' | 'packTooLarge' | 'packConflict' | 'packNotFound' | 'packActive' | 'packWriteFailed' | 'uploadFailed' | 'removeFailed';
+export type EmojiPackNotice = 'uploaded' | 'removed';
 export interface EmojiSettingsSnapshot {
     status: EmojiSettingsStatus;
     persisted: EmojiSettings;
     draft: EmojiSettings;
     revision: number;
     writable: boolean;
+    packs: readonly EmojiPackSummary[];
     dirty: boolean;
     saving: boolean;
+    packBusy: boolean;
     saved: boolean;
-    error?: string;
+    packNotice?: EmojiPackNotice;
+    error?: EmojiSettingsErrorCode;
 }
 /**
  * 设置卡片的 observable source。组件只读 snapshot 并触发 action；网络竞态、
@@ -34,10 +40,15 @@ export declare class EmojiSettingsController {
     /** 收到 Host 文档变更事件；有未保存编辑时先保留草稿。 */
     readonly invalidate: () => void;
     readonly editMode: (mode: EmojiMode) => void;
+    readonly editDisplaySize: (displaySize: EmojiDisplaySize) => void;
     readonly editCustomPrompt: (customPrompt: string) => void;
+    readonly editActivePack: (activePack: string) => void;
     readonly discard: () => void;
     readonly save: () => void;
     readonly reset: () => void;
+    readonly uploadPack: (file: File) => void;
+    readonly removePack: (packRef: string) => void;
+    private mutatePacks;
     private commit;
 }
 //# sourceMappingURL=settings-controller.d.ts.map

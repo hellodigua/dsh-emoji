@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import { strToU8, zipSync } from 'fflate'
 import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import {
   buildEmojiGuidance,
@@ -12,6 +16,8 @@ import {
   EMOJI_SETTINGS_NS,
   EmojiSettingsSchema,
 } from '../src/settings.ts'
+import { EmojiPackStore } from '../src/packs.ts'
+import { EMOJIS } from '../src/catalog.ts'
 
 class MemorySettings extends SettingsProvider {
   readonly writable = true
@@ -28,10 +34,13 @@ class MemorySettings extends SettingsProvider {
 }
 
 let context: Context | undefined
+let packRoot: string | undefined
 
 afterEach(async () => {
   await context?.fiber.dispose()
   context = undefined
+  if (packRoot !== undefined) await rm(packRoot, { recursive: true, force: true })
+  packRoot = undefined
 })
 
 async function setup() {
@@ -45,17 +54,22 @@ async function setup() {
 }
 
 describe('dynamic emoji guidance', () => {
-  it('三个模式生成清晰且保持单张上限的策略', () => {
+  it('三个模式生成英文技术默认值、稳定 ASCII 标签和单张上限', () => {
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'off' })).toBe('')
-    expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'auto' })).toContain('在最能对应当前情绪的句子或短段落后')
-    expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' })).toContain('大多数适合表达情绪')
+    expect(DEFAULT_CUSTOM_PROMPT).toBe('')
+    expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'auto' })).toContain('friendly, encouraging')
+    expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' })).toContain('most everyday responses')
     for (const mode of ['auto', 'frequent'] as const) {
       const guidance = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode })
-      expect(guidance).toContain('一回合最多一个标签')
-      expect(guidance).toContain(`用户自定义表情提示：\n${DEFAULT_CUSTOM_PROMPT}`)
-      expect(guidance).not.toContain('最终自然语言回答')
-      expect(guidance).not.toContain('医疗法律财务')
-      expect(guidance).toContain('::开心::')
+      expect(guidance).toContain('at most one marker per turn after its matching sentence or short paragraph')
+      expect(guidance).not.toContain('User-provided emoji guidance')
+      expect(guidance).toContain('Format: ::emoji:<key>::')
+      for (const emoji of EMOJIS) {
+        expect(guidance).toContain(`${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`)
+      }
+      expect(guidance.match(/::emoji:/g)).toHaveLength(1)
+      expect(guidance.length).toBeLessThan(1400)
+      expect(guidance).not.toContain('::开心::')
       expect(guidance).toContain(`[dsh-emoji:mode=${mode}]`)
     }
   })
@@ -65,14 +79,25 @@ describe('dynamic emoji guidance', () => {
       ...DEFAULT_EMOJI_SETTINGS,
       customPrompt: '优先选择轻松克制的表情，并放在转折句后。',
     })
-    expect(customized).toContain('用户自定义表情提示：\n优先选择轻松克制的表情，并放在转折句后。')
-    expect(customized.indexOf('用户自定义表情提示')).toBeLessThan(customized.indexOf('一回合最多一个标签'))
-    expect(customized).toContain('如有冲突，以本协议为准')
+    expect(customized).toContain('User-provided emoji guidance:\n优先选择轻松克制的表情，并放在转折句后。')
+    expect(customized.indexOf('User-provided emoji guidance')).toBeLessThan(customized.indexOf('Protocol:'))
+    expect(customized).toContain('Protocol overrides conflicts')
 
     const empty = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, customPrompt: '   ' })
-    expect(empty).not.toContain('用户自定义表情提示')
-    expect(empty).toContain('一回合最多一个标签')
-    expect(empty).toContain('只能使用以下标签')
+    expect(empty).not.toContain('User-provided emoji guidance')
+    expect(empty).toContain('at most one marker per turn')
+    expect(empty).toContain('Keys:')
+  })
+})
+
+describe('emoji display size settings', () => {
+  it('旧配置补齐正常默认值，并拒绝未知尺寸', () => {
+    expect(EmojiSettingsSchema({
+      mode: 'auto', customPrompt: '', activePack: 'deepseek@8', packRevision: 0,
+    })).toMatchObject({ displaySize: 'normal' })
+    expect(() => EmojiSettingsSchema({
+      mode: 'auto', displaySize: 'huge', customPrompt: '', activePack: 'deepseek@8', packRevision: 0,
+    })).toThrow()
   })
 })
 
@@ -80,7 +105,7 @@ describe('plugin-owned settings RPC', () => {
   it('读取、revision 保存、冲突拒绝和恢复默认形成闭环', async () => {
     const ctx = await setup()
     const committed: unknown[] = []
-    const handler = createEmojiSettingsRpcHandler(ctx.settings, value => { committed.push(value) })
+    const handler = createEmojiSettingsRpcHandler(ctx.settings, new EmojiPackStore(), value => { committed.push(value) })
     const signal = new AbortController().signal
 
     const initial = await handler('get', {}, signal)
@@ -90,20 +115,26 @@ describe('plugin-owned settings RPC', () => {
     })
 
     const saved = await handler('save', {
-      settings: { mode: 'frequent', customPrompt: '严肃或高风险内容跳过表情，其余把表情放在转折句后。' },
+      settings: { ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent', customPrompt: '严肃或高风险内容跳过表情，其余把表情放在转折句后。' },
       expectedRevision: 0,
     }, signal)
     expect(saved).toMatchObject({
       ok: true,
-      value: { settings: { mode: 'frequent', customPrompt: '严肃或高风险内容跳过表情，其余把表情放在转折句后。' }, revision: 1 },
+      value: { settings: { ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent', customPrompt: '严肃或高风险内容跳过表情，其余把表情放在转折句后。' }, revision: 1 },
     })
-    expect(committed).toEqual([{ mode: 'frequent', customPrompt: '严肃或高风险内容跳过表情，其余把表情放在转折句后。' }])
+    expect(committed).toEqual([{ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent', customPrompt: '严肃或高风险内容跳过表情，其余把表情放在转折句后。' }])
 
     const stale = await handler('save', {
       settings: DEFAULT_EMOJI_SETTINGS,
       expectedRevision: 0,
     }, signal)
-    expect(stale).toMatchObject({ ok: false, error: { code: 'settings-conflict' } })
+    expect(stale).toMatchObject({
+      ok: false,
+      error: {
+        code: 'settings-conflict',
+        message: 'Emoji settings changed elsewhere. Reload and try again.',
+      },
+    })
 
     const reset = await handler('reset', { expectedRevision: 1 }, signal)
     expect(reset).toMatchObject({
@@ -124,5 +155,70 @@ describe('plugin-owned settings RPC', () => {
     }, signal)).resolves.toMatchObject({ ok: false, error: { code: 'bad-request' } })
     await expect(handler('unknown', {}, signal))
       .resolves.toMatchObject({ ok: false, error: { code: 'bad-request' } })
+  })
+
+  it('只允许选择已安装包，并用稳定 attachment reason 报告包操作错误', async () => {
+    const ctx = await setup()
+    packRoot = await mkdtemp(join(tmpdir(), 'dsh-emoji-settings-packs-'))
+    const packs = new EmojiPackStore({ root: packRoot })
+    await packs.initialize()
+    const handler = createEmojiSettingsRpcHandler(ctx.settings, packs)
+    const signal = new AbortController().signal
+
+    await expect(handler('save', {
+      settings: { ...DEFAULT_EMOJI_SETTINGS, activePack: 'missing@1.0.0' },
+      expectedRevision: 0,
+    }, signal)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'attachment-error', details: { reason: 'pack-not-found' } },
+    })
+    await expect(handler('pack-upload', { archiveBase64: 'not base64' }, signal)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'attachment-error', details: { reason: 'pack-invalid' } },
+    })
+    await expect(handler('pack-remove', { packRef: 'deepseek@8' }, signal)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'attachment-error', details: { reason: 'pack-invalid' } },
+    })
+  })
+
+  it('包目录变更递增 Settings revision 和 packRevision 以通知其他标签页', async () => {
+    const ctx = await setup()
+    packRoot = await mkdtemp(join(tmpdir(), 'dsh-emoji-settings-packs-'))
+    const packs = new EmojiPackStore({ root: packRoot })
+    await packs.initialize()
+    const handler = createEmojiSettingsRpcHandler(ctx.settings, packs)
+    const png = new Uint8Array(await readFile(new URL('../assets/emoji/deepseek/ds_01.png', import.meta.url)))
+    const archive = zipSync({
+      'pack.json': strToU8(JSON.stringify({
+        schemaVersion: 1, id: 'settings-pack', name: 'Settings Pack', version: '1.0.0',
+      })),
+      ...Object.fromEntries(EMOJIS.map(emoji => [`images/${emoji.key}.png`, png])),
+    })
+
+    const uploaded = await handler('pack-upload', {
+      archiveBase64: Buffer.from(archive).toString('base64'),
+    }, new AbortController().signal)
+    expect(uploaded).toMatchObject({
+      ok: true,
+      value: {
+        settings: { activePack: 'deepseek@8', packRevision: 1 },
+        revision: 1,
+        packs: [expect.objectContaining({ ref: 'deepseek@8' }), expect.objectContaining({ ref: 'settings-pack@1.0.0' })],
+      },
+    })
+    const saved = await handler('save', {
+      settings: { ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent', packRevision: 999 },
+      expectedRevision: 1,
+    }, new AbortController().signal)
+    expect(saved).toMatchObject({
+      ok: true,
+      value: { settings: { mode: 'frequent', packRevision: 1 }, revision: 2 },
+    })
+    const reset = await handler('reset', { expectedRevision: 2 }, new AbortController().signal)
+    expect(reset).toMatchObject({
+      ok: true,
+      value: { settings: { mode: 'auto', packRevision: 1 }, revision: 3 },
+    })
   })
 })

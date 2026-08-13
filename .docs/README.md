@@ -1,6 +1,6 @@
 # 项目介绍
 
-`dsh-emoji` 是一个独立的 DeepSeek Harness Profile Bundle，为 Web Assistant 回复提供受控情绪标签、LLM 流确定性转写、PNG 路由、微型行内展示和实时频率配置。当前运行时内置 40 张透明蓝色正面鲸鱼表情，不修改 DSH core，也不实现用户输入选择器或 TUI 渲染。
+`dsh-emoji` 是一个独立的 DeepSeek Harness Profile Bundle，为 Web Assistant 回复提供受控情绪标签、LLM 流确定性转写、PNG 路由、行内展示和实时频率配置。当前运行时内置 40 张透明蓝色正面鲸鱼表情，不修改 DSH core，也不实现用户输入选择器或 TUI 渲染。
 
 # 技术栈
 
@@ -11,12 +11,14 @@
 
 # 关键功能
 
-- system prompt 把 40 个 catalog 名称作为 `::情绪词::` 有限词表交给模型，并要求模型根据正文上下文与表达节奏自主选择恰当插入位置，不再注册表情 Function Call。
+- system prompt 使用英文技术默认值，只声明一次 `::emoji:<key>::` 模板，再以紧凑的 `key=English/中文` 目录提供 40 个合法 key；marker 不随 UI locale 改变，也不注册表情 Function Call。
 - Host 用 global `llm/stream` 监听跨过运行时 scope，根据请求内模式标记把最终 text block 中的合法标签确定性转成素材 Markdown，不触发第二次模型调用。
-- `/api/dsh-emoji/assets/` 按白名单提供包内 PNG。
-- `./client` 注入可释放样式，把插件图片显示为 `2em` 行内元素。
-- 「设置 → 插件 → 表情（Whale Emoji）」横向提供关闭、智能、高频三档策略，以及最多 4000 字符的自定义提示词；需要跳过表情的场景也由提示词定义。
+- `/api/dsh-emoji/assets/` 按运行时表情包索引白名单提供 PNG，内置包仍来自发布产物。
+- v0.2.0 支持从设置页上传实现同一 40 个稳定 key 的 PNG ZIP 表情包，按不可变 `id@version` 保存到 `$DSH_HOME/emoji-packs/`，并可预览、启用和软移除。
+- `./client` 注入可释放样式，把插件图片显示为小、正常、偏大、大四档行内尺寸；默认“正常”为 `1.5em`。
+- 「设置 → 插件 → 表情（Whale Emoji）」完整支持 DSH 的中文和英文界面，横向提供关闭、智能、高频三档策略，以及默认留空、最多 4000 字符的附加提示词；空白时明确说明内置规则仍生效，并可一键填入本地化示例继续修改。
 - `dsh-emoji` Settings 命名空间持久化配置；loopback-only 自有 RPC 只读写本插件命名空间。
+- Host RPC 返回稳定错误码与英文 canonical message；Client controller 把错误收敛为有限状态，设置卡片再按当前 DSH locale 显示。
 - system prompt 随设置实时更新；请求内的模式标记决定该次流是否转写。
 - 切片脚本按 SHA-256 识别当前 `8×5` 正面鲸鱼完整版总览图，共维护 40 张 `128×128 RGBA PNG`。
 - Profile Bundle 同时装配 Host half 与 Web Client half。
@@ -52,12 +54,14 @@
 - [中文 README](../README.md) 是仓库默认入口；[English README](../README.en.md) 使用独立英文 Banner 与对话预览，两种语言互相链接。
 - [代码库摘要](codebase-summary.md)：运行时主链路、关键文件和验证入口。
 - [表情频率配置](features/emoji-settings.md)：设置数据流、安全边界、动态生效语义与阶段限制。
+- [用户表情包](features/user-emoji-packs.md)：ZIP 契约、安装事务、历史 URL、软移除和并发边界。
 
 # 当前验证状态
 
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- 在 DSH `0.0.1-rc.2` checkout 上，typecheck 与 8 个测试文件、58 项测试通过，覆盖完整 catalog、路由、检索、标签流、自定义提示词、跨 scope/树外模块身份、真实 Cordis、包结构、rc.2 版本边界和 Client。
-- 本机正式 `web` profile 的 dsh-emoji 依赖与 lockfile 已刷新到 rc.2，组合配置能发现该 bundle；但完整 profile 启动仍被另外两个等待旧 `httpServer` 的插件（`plugin-console`、`dsh-paste-input`）阻塞，需由各自项目迁移到 `webServer` 后才能恢复 3080 的完整组合。
+- 在 DSH `0.0.1-rc.2` checkout 上，typecheck 与 9 个测试文件、83 项测试通过，覆盖完整 catalog、稳定 ASCII marker、语义检索、路由、标签流、四档显示大小、完整 PNG 解码、ZIP 路径／体积边界、不可变安装、重启复验、设置与包并发、双语字典、跨 scope/树外模块身份、真实 Cordis、包结构和 Client。
+- 默认 `auto` guidance 从 2,219 字符降至 1,368 字符，减少约 38.4%；`frequent` 为 1,345 字符。测试逐项确认 40 个 `key=English/中文` 映射均保留，完整 `::emoji:` 模板只出现一次。
+- 本机正式 `web` Profile 已重新链接当前 `0.2.0` checkout，安装产物与仓库 Host/Client SHA-256 一致，内置 `deepseek@8` 包显示名为“大肥鱼”。两个等待旧 `httpServer` 的插件（`plugin-console`、`dsh-paste-input`）仍会阻断无 overlay 的完整冷启动；当前 PID `11676` 从 DSH checkout 冷启动并使用原 `/private/tmp` overlay 监听 3080，素材路由返回 HTTP 200。boot manifest 中 dsh-emoji Client rev 为 `3128c04f72e4`；真实设置页已确认中文简介不再使用“微型”、尺寸说明行已移除、“正常”以 `1.5em` 作为默认值，以及空白附加提示词的一键示例。本次没有保存或移除用户数据。
 - 使用同一份 rc.2 正式构建创建的隔离 Web profile 已完成真实验证：Host 随机端口启动成功，boot manifest 同时包含 `dsh-client-ui-settings-plugins` 与 dsh-emoji，设置页显示“表情”以及横排关闭/智能/高频和自定义提示词，浏览器控制台无 warning/error；`ds_01` 在线响应与仓库 PNG 的 SHA-256 一致。
 - 蓝色正面鲸鱼完整版使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致；迁移前曾在 3080 验证全部 40 条在线路由，当前 rc.2 隔离验证复核了 `ds_01` 的 HTTP 200、内容类型与逐字节一致性，完整 catalog 仍由自动化测试覆盖。
 - 旧 Bilibili 版本曾验证严肃内容跳过和端口边界；本次鲸鱼包仍需复跑这些扩展场景。

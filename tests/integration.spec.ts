@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { strToU8, zipSync } from 'fflate'
 import { Context } from '@deepseek-ai/cordis'
 import HttpServer from '@deepseek-ai/dsh-host-webserver'
 import LlmService, {
@@ -8,8 +12,10 @@ import LlmService, {
 import { SettingsProvider, settingsNamespace, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import {
-  apply, DEFAULT_EMOJI_SETTINGS, EMOJI_GUIDANCE, EMOJI_SETTINGS_NAMESPACE,
+  applyWithPackStore, DEFAULT_EMOJI_SETTINGS, EMOJI_GUIDANCE, EMOJI_SETTINGS_NAMESPACE,
 } from '../src/index.ts'
+import { EmojiPackStore } from '../src/packs.ts'
+import { EMOJIS } from '../src/catalog.ts'
 
 class MemorySettings extends SettingsProvider {
   readonly writable = true
@@ -26,7 +32,7 @@ class MemorySettings extends SettingsProvider {
 }
 
 class TextAdapter extends LlmAdapter {
-  text = '你好 ::开心::'
+  text = '你好 ::emoji:happy::'
 
   async *stream(): AsyncIterable<StreamChunk> {
     yield { type: 'block-start', index: 0, blockType: 'text' }
@@ -37,13 +43,16 @@ class TextAdapter extends LlmAdapter {
 }
 
 let context: Context | undefined
+let packRoot: string | undefined
 
 afterEach(async () => {
   await context?.fiber.dispose()
   context = undefined
+  if (packRoot !== undefined) await rm(packRoot, { recursive: true, force: true })
+  packRoot = undefined
 })
 
-async function setup(options?: { settings?: boolean }): Promise<{ ctx: Context; adapter: TextAdapter }> {
+async function setup(options?: { settings?: boolean }): Promise<{ ctx: Context; adapter: TextAdapter; packs: EmojiPackStore }> {
   context = new Context()
   await context.plugin(SystemPrompt)
   await context.plugin(LlmService)
@@ -51,8 +60,22 @@ async function setup(options?: { settings?: boolean }): Promise<{ ctx: Context; 
   context.llm.registerAdapter(['test'], adapter)
   await context.plugin(HttpServer, { host: '127.0.0.1', port: 0 })
   if (options?.settings === true) await context.plugin(MemorySettings)
-  await context.plugin(Object.assign(apply, { inject: ['llm', 'systemPrompt'] }))
-  return { ctx: context, adapter }
+  packRoot = await mkdtemp(join(tmpdir(), 'dsh-emoji-packs-'))
+  const packs = new EmojiPackStore({ root: packRoot })
+  const plugin = Object.assign(
+    async (ctx: Context, config?: typeof DEFAULT_EMOJI_SETTINGS) => await applyWithPackStore(ctx, config, packs),
+    { inject: ['llm', 'systemPrompt'] },
+  )
+  await context.plugin(plugin)
+  return { ctx: context, adapter, packs }
+}
+
+async function customPackArchive(): Promise<Uint8Array> {
+  const png = new Uint8Array(await readFile(new URL('../assets/emoji/deepseek/ds_02.png', import.meta.url)))
+  return zipSync({
+    'pack.json': strToU8(JSON.stringify({ schemaVersion: 1, id: 'custom-blue', name: 'Custom Blue', version: '1.0.0' })),
+    ...Object.fromEntries(EMOJIS.map(emoji => [`images/${emoji.key}.png`, png])),
+  })
 }
 
 async function modelText(ctx: Context): Promise<string> {
@@ -72,9 +95,9 @@ describe('real Cordis service composition', () => {
     expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain(EMOJI_GUIDANCE)
 
     const text = await modelText(ctx)
-    expect(text).toContain('你好 ![开心](')
-    const image = /!\[开心\]\(([^)]+)\)/.exec(text)?.[1]
-    expect(image).toContain(`http://127.0.0.1:${String(ctx.webServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png?v=8`)
+    expect(text).toContain('你好 ![Happy](')
+    const image = /!\[Happy\]\(([^)]+)\)/.exec(text)?.[1]
+    expect(image).toContain(`http://127.0.0.1:${String(ctx.webServer.port)}/api/dsh-emoji/assets/deepseek/8/ds_01.png`)
 
     const response = await fetch(String(image))
     expect(response.status).toBe(200)
@@ -88,7 +111,7 @@ describe('real Cordis service composition', () => {
       provider: 'test', model: 'test', messages: [], system,
     }
     // Loader 会给实际 LLM 服务附带 scope filter；插件监听必须是 global，
-    // 否则提示词生效但最终正文中的 ::情绪:: 不会进入转写器。
+    // 否则提示词生效但最终正文中的 ::emoji:<key>:: 不会进入转写器。
     const foreignScope = { [Context.filter]: () => false }
     const stream = ctx.waterfall(
       foreignScope as never,
@@ -101,7 +124,7 @@ describe('real Cordis service composition', () => {
     for await (const chunk of stream) {
       if (chunk.type === 'block-end' && chunk.block.type === 'text') text = chunk.block.text
     }
-    expect(text).toContain('![开心](')
+    expect(text).toContain('![Happy](')
   })
 
   it('不改写带 purpose 的压缩与标题等辅助模型调用', async () => {
@@ -115,7 +138,7 @@ describe('real Cordis service composition', () => {
     for await (const chunk of ctx.llm.stream(request)) {
       if (chunk.type === 'block-end' && chunk.block.type === 'text') text = chunk.block.text
     }
-    expect(text).toBe('你好 ::开心::')
+    expect(text).toBe('你好 ::emoji:happy::')
   })
 
   it('disposer 移除提示、流转写和素材路由', async () => {
@@ -125,11 +148,16 @@ describe('real Cordis service composition', () => {
     const adapter = new TextAdapter()
     context.llm.registerAdapter(['test'], adapter)
     await context.plugin(HttpServer, { host: '127.0.0.1', port: 0 })
-    const fiber = await context.plugin(Object.assign(apply, { inject: ['llm', 'systemPrompt'] }))
+    packRoot = await mkdtemp(join(tmpdir(), 'dsh-emoji-packs-'))
+    const packs = new EmojiPackStore({ root: packRoot })
+    const fiber = await context.plugin(Object.assign(
+      async (ctx: Context, config?: typeof DEFAULT_EMOJI_SETTINGS) => await applyWithPackStore(ctx, config, packs),
+      { inject: ['llm', 'systemPrompt'] },
+    ))
 
     await fiber.dispose()
     expect(renderPrompt(await context.systemPrompt.assemble())).not.toContain('dsh-emoji:mode=')
-    expect(await modelText(context)).toBe('你好 ::开心::')
+    expect(await modelText(context)).toBe('你好 ::emoji:happy::')
     expect((await fetch(`http://127.0.0.1:${String(context.webServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png`)).status).toBe(404)
   })
 
@@ -142,7 +170,7 @@ describe('real Cordis service composition', () => {
     await vi.waitFor(async () => {
       expect(renderPrompt(await ctx.systemPrompt.assemble())).not.toContain('dsh-emoji:mode=')
     })
-    expect(await modelText(ctx)).toBe('你好 ::开心::')
+    expect(await modelText(ctx)).toBe('你好 ::emoji:happy::')
 
     await ctx.settings.update(ns, {
       mode: 'frequent',
@@ -153,9 +181,24 @@ describe('real Cordis service composition', () => {
       expect(prompt).toContain('[dsh-emoji:mode=frequent]')
       expect(prompt).toContain('严肃内容跳过表情，其余优先把表情放在最相关的转折句后。')
     })
-    expect(await modelText(ctx)).toContain('![开心](')
+    expect(await modelText(ctx)).toContain('![Happy](')
 
     adapter.text = '模型漏掉了标签'
     expect(await modelText(ctx)).toBe('模型漏掉了标签')
+  })
+
+  it('选择用户表情包后，新请求使用带包版本的稳定 URL，历史资源路由保持可读', async () => {
+    const { ctx, packs } = await setup({ settings: true })
+    await packs.installArchive(await customPackArchive())
+    const ns = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
+    await ctx.settings.update(ns, { activePack: 'custom-blue@1.0.0' })
+    await vi.waitFor(() => expect(ctx.settings.get(ns)).toMatchObject({ activePack: 'custom-blue@1.0.0' }))
+
+    const text = await modelText(ctx)
+    const image = /!\[Happy\]\(([^)]+)\)/.exec(text)?.[1]
+    expect(image).toContain('/api/dsh-emoji/assets/custom-blue/1.0.0/happy.png')
+    const response = await fetch(String(image))
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('image/png')
   })
 })

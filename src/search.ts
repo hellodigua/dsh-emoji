@@ -19,12 +19,14 @@ interface WeightedTerm {
   readonly exactScore: number
   readonly containsRank: number
   readonly containsScore: number
-  readonly kind: 'name' | 'keyword' | 'alias' | 'tag'
+  readonly kind: 'label' | 'keyword' | 'alias' | 'tag'
 }
 
 function weightedTerms(emoji: EmojiCatalogEntry): WeightedTerm[] {
   return [
-    { value: emoji.name, exactRank: 4, exactScore: 1000, containsRank: 1, containsScore: 600, kind: 'name' },
+    ...Object.values(emoji.labels).map(value => ({
+      value, exactRank: 4, exactScore: 1000, containsRank: 1, containsScore: 600, kind: 'label' as const,
+    })),
     ...emoji.keywords.map(value => ({ value, exactRank: 3, exactScore: 900, containsRank: 1, containsScore: 560, kind: 'keyword' as const })),
     ...(EMOJI_ALIASES[emoji.id] ?? []).map(value => ({ value, exactRank: 2, exactScore: 850, containsRank: 1, containsScore: 540, kind: 'alias' as const })),
     ...emoji.tags.map(value => ({ value, exactRank: 1, exactScore: 300, containsRank: 1, containsScore: 180, kind: 'tag' as const })),

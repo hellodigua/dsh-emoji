@@ -27,27 +27,28 @@ function stream(text: string, reason: 'stop' | 'tool-calls' = 'stop'): AsyncIter
 
 describe('emoji marker rewrite', () => {
   it('把合法标签转成确定图片，并移除重复标签', () => {
-    const result = rewriteEmojiMarkers('这也太气人了。::生气:: 后面重复 ::开心::', imageUrl)
+    const result = rewriteEmojiMarkers('这也太气人了。::emoji:angry:: 后面重复 ::emoji:happy::', imageUrl)
     expect(result).toEqual({
-      text: '这也太气人了。![生气](http://127.0.0.1:3080/assets/ds_05.png) 后面重复 ',
+      text: '这也太气人了。![Angry](http://127.0.0.1:3080/assets/ds_05.png) 后面重复 ',
       directive: 'emoji',
     })
   })
 
   it('保留未知、转义、行内代码和围栏代码中的标签', () => {
     const source = [
-      '未知 ::不存在::，转义 \\::开心::，行内 `::狗头::`。',
+      '未知 ::emoji:missing:: 和旧标签 ::开心::，转义 \\::emoji:happy::，行内 `::emoji:doge::`。',
       '```md',
-      '::无语::',
+      '::emoji:speechless::',
       '```',
-      '正文 ::开心::',
+      '正文 ::emoji:happy::',
     ].join('\n')
     const result = rewriteEmojiMarkers(source, imageUrl)
-    expect(result.text).toContain('::不存在::')
-    expect(result.text).toContain(String.raw`\::开心::`)
-    expect(result.text).toContain('`::狗头::`')
-    expect(result.text).toContain('```md\n::无语::\n```')
-    expect(result.text).toContain('正文 ![开心](http://127.0.0.1:3080/assets/ds_01.png)')
+    expect(result.text).toContain('::emoji:missing::')
+    expect(result.text).toContain('::开心::')
+    expect(result.text).toContain(String.raw`\::emoji:happy::`)
+    expect(result.text).toContain('`::emoji:doge::`')
+    expect(result.text).toContain('```md\n::emoji:speechless::\n```')
+    expect(result.text).toContain('正文 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)')
   })
 
   it('只识别绑定在 system prompt 中的启用模式', () => {
@@ -60,10 +61,10 @@ describe('emoji marker rewrite', () => {
 
 describe('emoji stream rewrite', () => {
   it('保留流式 delta，并在 block-end 把标签改成图片', async () => {
-    const chunks = await collect(rewriteEmojiStream(stream('你好 ::开心::'), { imageUrl }))
-    expect(chunks.find(chunk => chunk.type === 'text-delta')).toMatchObject({ text: '你好 ::开心::' })
+    const chunks = await collect(rewriteEmojiStream(stream('你好 ::emoji:happy::'), { imageUrl }))
+    expect(chunks.find(chunk => chunk.type === 'text-delta')).toMatchObject({ text: '你好 ::emoji:happy::' })
     expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
-      block: { type: 'text', text: '你好 ![开心](http://127.0.0.1:3080/assets/ds_01.png)' },
+      block: { type: 'text', text: '你好 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)' },
     })
     expect(chunks.map(chunk => chunk.type)).toEqual([
       'block-start', 'text-delta', 'block-end', 'usage', 'finish',

@@ -1,6 +1,6 @@
 /** “设置 → 插件”中的 dsh-emoji 配置卡片。 */
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
-import { type EmojiMode } from '../settings-model.ts';
+import { type EmojiDisplaySize, type EmojiMode } from '../settings-model.ts';
 import type { EmojiSettingsController } from './settings-controller.ts';
 import { EMOJI_LOCALE_NS } from './locales.ts';
 export interface EmojiSettingsCardFace {
@@ -8,7 +8,11 @@ export interface EmojiSettingsCardFace {
         emojiSettings: EmojiSettingsController;
     };
     editMode: (mode: EmojiMode) => void;
+    editDisplaySize: (displaySize: EmojiDisplaySize) => void;
     editCustomPrompt: (value: string) => void;
+    editActivePack: (packRef: string) => void;
+    uploadPack: (file: File) => void;
+    removePack: (packRef: string) => void;
     save: () => void;
     discard: () => void;
     reset: () => void;
