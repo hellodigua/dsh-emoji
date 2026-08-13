@@ -100,23 +100,25 @@ corepack pnpm build
 corepack pnpm pack --dry-run
 ```
 
-pnpm 11 installs DSH development peers from npm instead of linking a sibling source checkout. The published artifact does not bundle the DSH runtime, and runtime code reads packaged files under `assets/` only. The current release targets DSH `^0.0.1-rc.5` and intentionally does not support the older rc.1/rc.2 npm contracts: the settings card depends on `dsh-client-ui-settings-plugins`, while the Host uses `webServer` and `SettingsProvider`.
+pnpm 11 installs DSH development packages from npm instead of linking a sibling source checkout. Published peer ranges target DSH `^0.1.0-rc.2`, while exact `0.1.0-rc.2` devDependencies pin the local typecheck and test baseline. The published artifact does not bundle the DSH runtime, and runtime code reads packaged files under `assets/` only. The plugin intentionally carries no compatibility stack for `0.0.1-rc.*`: the settings card depends on `dsh-client-ui-settings-plugins`, while the Host uses `webServer` and `SettingsProvider`.
 
-## Installing with DSH rc.5
+The initial dependency install requires an npm account or token with read access to the private `@deepseek-ai/*` packages. If your local npm configuration injects credentials through `NPM_TOKEN`, export a valid value first; when credentials are missing or invalid, the registry may mask private packages as 404 responses.
 
-Build this repository first, then install it with the npm-published DSH rc.5 CLI. Do not substitute a global `dsh` or a source snapshot for this compatibility check:
+## Installing with DSH 0.1.0-rc.2
+
+Build this repository first, then install it with the npm-published DSH 0.1.0-rc.2 CLI. Do not substitute a global `dsh` or a source snapshot for this compatibility check:
 
 ```sh
-npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web add -w \
+pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web add -w \
   --ignore-scripts \
   'file:/absolute/path/to/dsh-emoji'
-npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh web
+pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 web
 ```
 
 Restart the Web Host after installation, then verify the bundle through `--dump-config`, the Web boot manifest, and a real conversation. Remove it by package name:
 
 ```sh
-npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web remove -w \
+pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web remove -w \
   @dsh-external/dsh-emoji
 ```
 

@@ -6,7 +6,7 @@
 2. Agent 在面向用户的自然语言正文中，根据用户提示自主决定是否使用表情，并选择表情与恰当位置，最多输出一个不随 UI locale 改变的 ASCII marker。
 3. `src/index.ts` 用 global 监听跨过运行时 scope filter，并以无辅助 `purpose` + 私有模式标记界定主请求；`src/markers.ts` 在 text block 结束时转写合法标签。模型直出的本插件 Markdown 图片不会原样持久化：标准文件名及下划线变体重新收敛到 catalog 和当前包 URL，未知文件名删除；代码围栏、行内代码、转义内容、未知 marker 和普通外部图片不改写。
 4. 转写请求开始时固定当前 `activePack`；结果引用当前 Host 的 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 绝对 loopback URL，缺失包 fail closed 回退内置 `deepseek@8`。
-5. `src/packs.ts` 索引内置包和 `$DSH_HOME/emoji-packs/` 用户包；`src/assets.ts` 通过 DSH rc.5 的 `webServer` 服务注册路由并只提供索引白名单内的 PNG。v0.1 的两段式内置 URL 继续兼容。
+5. `src/packs.ts` 索引内置包和 `$DSH_HOME/emoji-packs/` 用户包；`src/assets.ts` 通过 DSH 0.1.0-rc.2 的 `webServer` 服务注册路由并只提供索引白名单内的 PNG。v0.1 的两段式内置 URL 继续兼容。
 6. `src/client/index.ts` 依赖 `dsh-client-ui-settings-plugins` 提供的 `settings.plugin.item` 插槽，并只对 dsh-emoji 路由图片应用可配置的四档行内尺寸；默认 `normal` 为 `1.5em`，基线偏移随档位计算。
 
 ## 素材链路
@@ -20,7 +20,7 @@
 ## 配置链路
 
 - `src/settings-model.ts` 定义 Host/Client 共用文档与 RPC 契约，包括关闭、智能、高频三档模式、默认留空的 `customPrompt`、默认 `deepseek@8` 的 `activePack` 和 Host 维护的包目录 `packRevision`；内置英文策略不进入持久化设置。
-- `src/settings.ts` 通过 rc.5 的 `SettingsProvider` 注册 Settings namespace，并提供 loopback-only 的 get/save/reset RPC；wire message 使用英文 canonical 文案，客户端依赖稳定错误码而不是 message。
+- `src/settings.ts` 通过 DSH 0.1.0-rc.2 的 `SettingsProvider` 注册 Settings namespace，并提供 loopback-only 的 get/save/reset RPC；wire message 使用英文 canonical 文案，客户端依赖稳定错误码而不是 message。
 - `src/client/settings-controller.ts` 管理 revision、草稿、网络竞态和有限错误状态；`locales.ts` 以英文定义完整键集合并检查中文翻译等价，`EmojiSettingsCard.tsx` 的全部可见文案都通过 locale seat 展示。附加提示词留空时保留内置规则，并可把当前 UI locale 的推荐示例一键写入草稿，不自动持久化。
 - 设置 watcher 触发 `system-prompt/change`，下一次模型请求读取新模式与自定义提示词，无需重启。
 
@@ -37,6 +37,6 @@
 
 ## DSH 兼容边界
 
-- 当前支持范围为 `^0.0.1-rc.5`；构建依赖通过私有 npm scope 安装，禁止再用同级 `../test-hellodigua` 的 `link:` 依赖冒充 rc.5 兼容性验证。
-- 不兼容 `rc.1`，也不提供旧 `dsh-client-ui-plugin-config`、`httpServer` 或旧 `Settings` 类型的双栈适配。
+- 当前支持范围为 `^0.1.0-rc.2`；peerDependencies 表达部署契约，精确的 `0.1.0-rc.2` devDependencies 固定本地类型检查和测试基线。构建依赖通过 npm 安装，禁止再用同级源码 checkout 的 `link:` 依赖冒充兼容性验证。
+- 不提供 `0.0.1-rc.*`、旧 `dsh-client-ui-plugin-config`、`httpServer` 或旧 `Settings` 类型的双栈适配。
 - DSH 再次修改客户端设置包、Cordis 服务名或 Settings 公共类型时，应先更新 peer 范围并重新执行完整交付检查。

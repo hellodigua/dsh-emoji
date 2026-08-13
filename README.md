@@ -100,23 +100,25 @@ corepack pnpm build
 corepack pnpm pack --dry-run
 ```
 
-DSH 开发依赖由 pnpm 11 根据 peer 声明从 npm 安装，不再链接同级源码 checkout。发布产物自身不携带 DSH runtime，运行时只读取包内 `assets/`。当前版本面向 DSH `^0.0.1-rc.5`，明确不兼容旧的 rc.1/rc.2 npm 契约：设置卡片依赖 `dsh-client-ui-settings-plugins`，Host 使用 `webServer` 与 `SettingsProvider`。
+DSH 开发依赖由 pnpm 11 从 npm 安装，不再链接同级源码 checkout。发布用 peer 范围面向 DSH `^0.1.0-rc.2`，本地开发则用精确的 `0.1.0-rc.2` devDependencies 固定类型检查和测试基线；发布产物自身不携带 DSH runtime，运行时只读取包内 `assets/`。插件不保留 `0.0.1-rc.*` 双栈兼容层：设置卡片依赖 `dsh-client-ui-settings-plugins`，Host 使用 `webServer` 与 `SettingsProvider`。
 
-## 使用 DSH rc.5 安装
+首次安装依赖时，npm 账号或 token 必须具备 `@deepseek-ai/*` 私有包的读取权限。如果本机 npm 配置通过 `NPM_TOKEN` 注入凭据，请先导出有效变量；未配置或凭据失效时，registry 可能用 404 隐藏私有包。
 
-先在本仓库构建，再用 npm 发布的 DSH rc.5 CLI 安装；不要用全局 `dsh` 或源码快照代替该兼容性验证：
+## 使用 DSH 0.1.0-rc.2 安装
+
+先在本仓库构建，再用 npm 发布的 DSH 0.1.0-rc.2 CLI 安装；不要用全局 `dsh` 或源码快照代替该兼容性验证：
 
 ```sh
-npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web add -w \
+pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web add -w \
   --ignore-scripts \
   'file:/absolute/path/to/dsh-emoji'
-npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh web
+pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 web
 ```
 
 安装后重启 Web Host，并用 `--dump-config`、Web boot manifest 和实际会话共同验证。卸载时使用包名：
 
 ```sh
-npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web remove -w \
+pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web remove -w \
   @dsh-external/dsh-emoji
 ```
 

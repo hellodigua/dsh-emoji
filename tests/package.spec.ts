@@ -25,16 +25,20 @@ describe('Profile Bundle package', () => {
     expect(packageJson.exports['./client'].default).toBe('./lib/client.js')
   })
 
-  it('通过 npm peer 接入 DSH rc.5 契约，不保留源码 link 或 rc.1 设置包', () => {
+  it('通过 npm peer 接入 DSH 0.1.0-rc.2 契约，不保留源码 link 或旧设置包', () => {
     const dshPeers = Object.entries(packageJson.peerDependencies)
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
     for (const [, range] of dshPeers) {
-      expect(range).toBe('^0.0.1-rc.5')
+      expect(range).toBe('^0.1.0-rc.2')
     }
-    expect(packageJson.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.1-rc.4')
-    expect(packageJson.peerDependencies['@deepseek-ai/schemastery']).toBe('^3.18.1-rc.4')
-    expect(Object.keys(packageJson.devDependencies).filter(name => name.startsWith('@deepseek-ai/'))).toEqual([])
+    expect(packageJson.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.1')
+    expect(packageJson.peerDependencies['@deepseek-ai/schemastery']).toBe('^3.18.1')
+    for (const [name] of dshPeers) {
+      expect(packageJson.devDependencies[name]).toBe('0.1.0-rc.2')
+    }
+    expect(packageJson.devDependencies['@deepseek-ai/cordis']).toBe('4.0.1')
+    expect(packageJson.devDependencies['@deepseek-ai/schemastery']).toBe('3.18.1')
     expect(JSON.stringify(packageJson)).not.toContain('link:../test-hellodigua')
     expect(pnpmWorkspace).toMatch(/^autoInstallPeers: true$/m)
     expect(pnpmWorkspace).toMatch(/^nodeLinker: hoisted$/m)
