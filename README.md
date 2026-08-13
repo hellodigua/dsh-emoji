@@ -1,5 +1,7 @@
 # dsh-emoji
 
+[English](README.en.md) | 简体中文
+
 ![dsh-emoji 蓝鲸表情包](assets/readme/banner.png)
 
 `dsh-emoji` 是 DeepSeek Harness 的 Profile Bundle，让 Agent 在正文中输出受控情绪标签，再由 Host 确定性转成微型 Markdown 图片。当前只支持 Web Assistant 回复，内置 40 张透明背景的正面鲸鱼二创表情，不修改 DSH core。

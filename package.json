@@ -24,6 +24,7 @@
     "ASSETS.md",
     "LICENSE",
     "README.md",
+    "README.en.md",
     "cordis.patch.yml"
   ],
   "engines": {

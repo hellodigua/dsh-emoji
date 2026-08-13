@@ -49,6 +49,7 @@
 
 # 专题文档
 
+- [中文 README](../README.md) 是仓库默认入口；[English README](../README.en.md) 使用独立英文 Banner 与对话预览，两种语言互相链接。
 - [代码库摘要](codebase-summary.md)：运行时主链路、关键文件和验证入口。
 - [表情频率配置](features/emoji-settings.md)：设置数据流、安全边界、动态生效语义与阶段限制。
 
