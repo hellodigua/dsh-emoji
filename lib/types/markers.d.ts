@@ -18,7 +18,7 @@ export interface EmojiStreamRewriteOptions {
     readonly imageUrl: (emoji: EmojiCatalogEntry) => string;
 }
 /**
- * 只在 Markdown 普通文本中转写合法标签，围栏代码与行内代码保持原样。
+ * 只在 Markdown 普通文本中转写合法标签，并收敛模型直出的本插件图片；围栏代码与行内代码保持原样。
  * @param text - 模型完成的一个 text block。
  * @param imageUrl - 把 catalog 条目解析为当前 Host 的素材 URL。
  * @param initialDirective - 前序 text block 已经选定的指令，用于限制一次回复最多一张。

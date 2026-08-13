@@ -16,7 +16,7 @@ English | [简体中文](README.md)
 - The Host wraps the Agent's LLM stream and deterministically replaces valid markers with emoji Markdown when the final text block closes. This does not create a Function Call or a second model request.
 - The Host serves immutable, versioned images from `/api/dsh-emoji/assets/<pack-id>/<version>/<file>`. Historical `/deepseek/<file>.png` URLs written by `0.1.x` remain supported.
 - The Web Client styles only images under that route and offers Small, Normal, Large, and Extra large inline sizes; the default is Normal at `1.5em`.
-- The rewriter processes ordinary Markdown text only, skips inline code, fenced code, and unknown markers, and enforces a maximum of one emoji per turn in code.
+- The rewriter processes ordinary Markdown text only, skips inline code, fenced code, and unknown markers, and enforces a maximum of one emoji per turn in code. If the model bypasses the marker and emits a plugin Markdown image directly, a valid standard filename (including an `_` typo for `-`) is resolved back to the current pack's canonical URL, while an invented filename is removed. Ordinary external images are unaffected.
 
 ## Adjusting emoji frequency
 
@@ -28,7 +28,7 @@ After installation and a Web Host restart, open **Settings → Plugins → Whale
 
 The settings card is fully available in English and Chinese and follows the active DSH interface language. You can also use the **Additional prompt (optional)** field to tune emoji selection, tone, placement, and situations where emoji should be skipped. Leaving it empty keeps the built-in rules; an empty field offers a localized example that you can insert with one click and edit before saving. The example has no effect unless you explicitly insert and save it. Changes take effect on the next model call without a restart. The configuration is stored under the `dsh-emoji` section of the DSH Settings document, which defaults to `~/.dsh/settings.yaml`.
 
-The custom prompt is empty by default and accepts up to 4,000 characters. The canonical English strategy and marker protocol are not persisted as user settings. The plugin always retains the mode marker, valid marker catalog, user-facing-text boundary, and one-emoji-per-turn rule so that removing critical protocol text cannot accidentally disable rewriting. Host RPC uses stable error codes and canonical English wire messages; the card localizes those errors for the active DSH language.
+The custom prompt is empty by default and accepts up to 4,000 characters. The canonical English strategy and marker protocol are not persisted as user settings. The plugin always retains the mode marker, valid marker catalog, prohibition on model-authored Markdown images or asset URLs, user-facing-text boundary, and one-emoji-per-turn rule so that removing critical protocol text cannot accidentally disable rewriting. Host RPC uses stable error codes and canonical English wire messages; the card localizes those errors for the active DSH language.
 
 Marker selection in **Smart** and **Frequent** modes still depends on the model. The plugin does not append an image when the model chooses no marker; use the custom prompt to define situations where emoji should be skipped.
 

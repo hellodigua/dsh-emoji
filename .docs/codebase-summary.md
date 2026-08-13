@@ -4,7 +4,7 @@
 
 1. `src/index.ts` 根据实时 Settings 生成带 `[dsh-emoji:mode=…]` 的英文 canonical system prompt，将用户可编辑的 `customPrompt` 夹在频率策略与不可编辑协议约束之间；marker 模板只声明一次，catalog 以 `key=English/中文` 紧凑目录提供全部合法 key。
 2. Agent 在面向用户的自然语言正文中，根据用户提示自主决定是否使用表情，并选择表情与恰当位置，最多输出一个不随 UI locale 改变的 ASCII marker。
-3. `src/index.ts` 用 global 监听跨过运行时 scope filter，并以无辅助 `purpose` + 私有模式标记界定主请求；`src/markers.ts` 在 text block 结束时转写合法标签。代码围栏、行内代码和未知标签不改写。
+3. `src/index.ts` 用 global 监听跨过运行时 scope filter，并以无辅助 `purpose` + 私有模式标记界定主请求；`src/markers.ts` 在 text block 结束时转写合法标签。模型直出的本插件 Markdown 图片不会原样持久化：标准文件名及下划线变体重新收敛到 catalog 和当前包 URL，未知文件名删除；代码围栏、行内代码、转义内容、未知 marker 和普通外部图片不改写。
 4. 转写请求开始时固定当前 `activePack`；结果引用当前 Host 的 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 绝对 loopback URL，缺失包 fail closed 回退内置 `deepseek@8`。
 5. `src/packs.ts` 索引内置包和 `$DSH_HOME/emoji-packs/` 用户包；`src/assets.ts` 通过 DSH rc.5 的 `webServer` 服务注册路由并只提供索引白名单内的 PNG。v0.1 的两段式内置 URL 继续兼容。
 6. `src/client/index.ts` 依赖 `dsh-client-ui-settings-plugins` 提供的 `settings.plugin.item` 插槽，并只对 dsh-emoji 路由图片应用可配置的四档行内尺寸；默认 `normal` 为 `1.5em`，基线偏移随档位计算。
@@ -26,7 +26,7 @@
 
 ## 关键验证
 
-- `tests/markers.spec.ts`：标签、Markdown 边界、重复限制和无标签行为。
+- `tests/markers.spec.ts`：标签、模型直出图片的规范化与拒绝、Markdown 边界、重复限制和无标签行为。
 - `tests/integration.spec.ts`：真实 Cordis、LLM 流、跨 scope/树外模块身份、辅助调用隔离、临时端口素材 URL与设置热更新。
 - `tests/catalog.spec.ts`、`tests/assets.spec.ts`：catalog/磁盘一致性和路由白名单。
 - `tests/client.spec.ts`、`tests/settings.spec.ts`：Web 样式、完整双语字典、错误码收敛与设置交互。

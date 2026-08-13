@@ -33,6 +33,48 @@ export interface EmojiStreamRewriteOptions {
 const emojiByMarkerBody = new Map<string, EmojiCatalogEntry>(
   EMOJIS.map(emoji => [`emoji:${emoji.key}`, emoji]),
 )
+const emojiByAssetFile = new Map<string, EmojiCatalogEntry>(
+  EMOJIS.flatMap(emoji => [[`${emoji.key}.png`, emoji] as const, [emoji.file, emoji] as const]),
+)
+
+interface DirectEmojiImage {
+  readonly end: number
+  readonly emoji?: EmojiCatalogEntry
+}
+
+/** 识别模型绕过 marker 直接拼出的本插件 Markdown 图片。 */
+function directEmojiImageAt(text: string, index: number): DirectEmojiImage | undefined {
+  if (!text.startsWith('![', index)) return undefined
+  const destinationStart = text.indexOf('](', index + 2)
+  if (destinationStart === -1) return undefined
+  const imageEnd = text.indexOf(')', destinationStart + 2)
+  if (imageEnd === -1) return undefined
+
+  const rawDestination = text.slice(destinationStart + 2, imageEnd).trim()
+  const destination = rawDestination.startsWith('<') && rawDestination.endsWith('>')
+    ? rawDestination.slice(1, -1)
+    : rawDestination
+  let url: URL
+  try {
+    url = new URL(destination, 'http://localhost')
+  } catch {
+    return undefined
+  }
+  if (!url.pathname.startsWith('/api/dsh-emoji/assets/')) return undefined
+
+  const encodedFile = url.pathname.split('/').at(-1)
+  if (encodedFile === undefined) return { end: imageEnd + 1 }
+  let file: string
+  try {
+    file = decodeURIComponent(encodedFile)
+  } catch {
+    return { end: imageEnd + 1 }
+  }
+  const emoji = emojiByAssetFile.get(file)
+    ?? emojiByAssetFile.get(file.replaceAll('_', '-'))
+  return { end: imageEnd + 1, emoji }
+}
+
 function markdownImage(emoji: EmojiCatalogEntry, imageUrl: (emoji: EmojiCatalogEntry) => string): string {
   return `![${emoji.labels.en}](${imageUrl(emoji)})`
 }
@@ -62,19 +104,31 @@ function rewritePlainText(
       continue
     }
 
-    if (inlineCodeTicks.value === 0 && text.startsWith('::', index) && !isEscaped(text, index)) {
-      const close = text.indexOf('::', index + 2)
-      if (close !== -1) {
-        const markerBody = text.slice(index + 2, close)
-        const emoji = emojiByMarkerBody.get(markerBody)
-        if (emoji !== undefined) {
-          if (state.directive === 'none') {
-            state.directive = 'emoji'
-            output += markdownImage(emoji, imageUrl)
+    if (inlineCodeTicks.value === 0) {
+      const directImage = isEscaped(text, index) ? undefined : directEmojiImageAt(text, index)
+      if (directImage !== undefined) {
+        if (state.directive === 'none' && directImage.emoji !== undefined) {
+          state.directive = 'emoji'
+          output += markdownImage(directImage.emoji, imageUrl)
+        }
+        index = directImage.end
+        continue
+      }
+
+      if (text.startsWith('::', index) && !isEscaped(text, index)) {
+        const close = text.indexOf('::', index + 2)
+        if (close !== -1) {
+          const markerBody = text.slice(index + 2, close)
+          const emoji = emojiByMarkerBody.get(markerBody)
+          if (emoji !== undefined) {
+            if (state.directive === 'none') {
+              state.directive = 'emoji'
+              output += markdownImage(emoji, imageUrl)
+            }
+            // 无论模型重复了多少合法标签，程序层都只保留第一个。
+            index = close + 2
+            continue
           }
-          // 无论模型重复了多少合法标签，程序层都只保留第一个。
-          index = close + 2
-          continue
         }
       }
     }
@@ -86,7 +140,7 @@ function rewritePlainText(
 }
 
 /**
- * 只在 Markdown 普通文本中转写合法标签，围栏代码与行内代码保持原样。
+ * 只在 Markdown 普通文本中转写合法标签，并收敛模型直出的本插件图片；围栏代码与行内代码保持原样。
  * @param text - 模型完成的一个 text block。
  * @param imageUrl - 把 catalog 条目解析为当前 Host 的素材 URL。
  * @param initialDirective - 前序 text block 已经选定的指令，用于限制一次回复最多一张。

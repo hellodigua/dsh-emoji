@@ -34,11 +34,43 @@ describe('emoji marker rewrite', () => {
     })
   })
 
+  it('把模型直出的插件图片收敛回标准 key，并移除不存在的文件名', () => {
+    const source = [
+      '规范化 ![Laugh-cry](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/laugh_cry.png)',
+      '后续重复 ![Doge](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/doge.png)',
+      '臆造 ![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)',
+      '普通外图 ![Logo](https://example.com/logo.png)',
+    ].join('\n')
+    const result = rewriteEmojiMarkers(source, imageUrl)
+    expect(result).toEqual({
+      text: [
+        '规范化 ![Laugh Cry](http://127.0.0.1:3080/assets/ds_23.png)',
+        '后续重复 ',
+        '臆造 ',
+        '普通外图 ![Logo](https://example.com/logo.png)',
+      ].join('\n'),
+      directive: 'emoji',
+    })
+  })
+
+  it('移除无效直链后仍允许后续合法 marker 选择表情', () => {
+    const result = rewriteEmojiMarkers([
+      '错误 ![Kuanghan](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/kuanghan.png)',
+      '有效 ::emoji:sweating::',
+    ].join('\n'), imageUrl)
+    expect(result.text).toBe([
+      '错误 ',
+      '有效 ![Sweating](http://127.0.0.1:3080/assets/ds_12.png)',
+    ].join('\n'))
+  })
+
   it('保留未知、转义、行内代码和围栏代码中的标签', () => {
     const source = [
       '未知 ::emoji:missing:: 和旧标签 ::开心::，转义 \\::emoji:happy::，行内 `::emoji:doge::`。',
+      '转义 \\![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)，行内 `![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)`。',
       '```md',
       '::emoji:speechless::',
+      '![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)',
       '```',
       '正文 ::emoji:happy::',
     ].join('\n')
@@ -47,7 +79,9 @@ describe('emoji marker rewrite', () => {
     expect(result.text).toContain('::开心::')
     expect(result.text).toContain(String.raw`\::emoji:happy::`)
     expect(result.text).toContain('`::emoji:doge::`')
-    expect(result.text).toContain('```md\n::emoji:speechless::\n```')
+    expect(result.text).toContain(String.raw`\![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)`)
+    expect(result.text).toContain('`![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)`')
+    expect(result.text).toContain('```md\n::emoji:speechless::\n![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)\n```')
     expect(result.text).toContain('正文 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)')
   })
 

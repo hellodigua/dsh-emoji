@@ -62,9 +62,10 @@ describe('dynamic emoji guidance', () => {
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' })).toContain('most everyday responses')
     for (const mode of ['auto', 'frequent'] as const) {
       const guidance = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode })
-      expect(guidance).toContain('at most one marker per turn after its matching sentence or short paragraph')
+      expect(guidance).toContain('at most one marker per turn after its sentence or short paragraph')
       expect(guidance).not.toContain('User-provided emoji guidance')
       expect(guidance).toContain('Format: ::emoji:<key>::')
+      expect(guidance).toContain('Never emit Markdown images or asset URLs')
       for (const emoji of EMOJIS) {
         expect(guidance).toContain(`${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`)
       }

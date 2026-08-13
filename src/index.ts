@@ -33,7 +33,7 @@ export const inject = ['llm', 'systemPrompt']
 export const Config = EmojiSettingsSchema
 
 const MARKER_MEANINGS = EMOJIS.map(emoji => `${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`).join(', ')
-const PROTOCOL_GUIDANCE = `Protocol: final user-facing natural-language text only; never intermediate/tool steps or code. Add at most one marker per turn after its matching sentence or short paragraph; never replace substantive content. Format: ::emoji:<key>::. Keys: ${MARKER_MEANINGS}. Do not substitute Unicode emoji. User guidance may adjust choice, tone, placement, or skip conditions, but not mode, keys, final-text restriction, or one-marker limit. Protocol overrides conflicts.`
+const PROTOCOL_GUIDANCE = `Protocol: final user-facing text only, never reasoning, tool steps, or code. Add at most one marker per turn after its sentence or short paragraph; never replace content. Format: ::emoji:<key>::. Never emit Markdown images or asset URLs; only this marker selects an image. Keys: ${MARKER_MEANINGS}. Unicode emoji are forbidden. User guidance may adjust choice, tone, placement, or skip conditions, not mode, keys, final-text scope, or one-marker limit. Protocol overrides conflicts.`
 
 function composeGuidance(strategy: string, customPrompt: string): string {
   const prompt = customPrompt.trim()

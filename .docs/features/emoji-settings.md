@@ -26,7 +26,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。
 5. Host watcher 更新内存设置，并触发 `system-prompt/change`。
 6. 动态 prompt provider 在每次 assembly 时读取最新设置，把启用模式写入 `[dsh-emoji:mode=<mode>]` 请求标记，并将 `customPrompt` 追加到内置策略后；LLM 流开始时固定该请求的 `activePack`。
-7. global `llm/stream` 包装器跨过运行时 scope filter，只处理带上述标记且没有辅助 `purpose` 的主请求；合法 `::emoji:<key>::` 在 text block 完成时确定性转成当前 Host 的素材 Markdown。
+7. global `llm/stream` 包装器跨过运行时 scope filter，只处理带上述标记且没有辅助 `purpose` 的主请求；合法 `::emoji:<key>::` 在 text block 完成时确定性转成当前 Host 的素材 Markdown。若模型从历史消息模仿并直出本插件 Markdown 图片，标准文件名和 `_`→`-` 变体重新解析为 catalog key，再由当前包生成规范 URL；未知文件名删除且不占用后续合法 marker 的单张额度。
 8. 上传或移除包后 Host 递增内部 `packRevision`，沿用 `settings/document-updated` 事件让其他已打开的卡片重读目录；存在未保存草稿时先保留草稿，放弃后再读取 Host，迟到的 refresh 不能覆盖请求发出后新建的草稿。
 9. Client controller 把 Host 错误码、非法响应和本地连接失败收敛为有限错误状态；设置卡片通过完整的 `zh/en` locale 字典显示所有标题、模式、尺寸、说明、状态、按钮和错误。
 10. `displaySize` 草稿会即时重建当前标签页的 namespaced CSS；放弃恢复已保存值，保存后其他标签页通过现有文档失效事件重读。尺寸只影响 Client，不触发 system prompt 变化。
@@ -41,7 +41,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 - `packRevision` 由 Host 保留；普通 save/reset 不能伪造或把它清零。
 - Client bundle 只把 React 与 `react/jsx-runtime` 作为平台 external，避免打包第二份 React。
 - 输出包装器不依赖 `isAgentLoopRequest()` 的模块私有 `WeakSet` 身份，因为树外插件可能解析到另一份 `dsh-llm` 模块；它用稳定的 `purpose` 字段排除压缩和标题调用，再从请求已经装配的 system prompt 读取私有模式标记，设置并发变化不会改变正在生成的回答。
-- marker 必须精确命中包内 catalog 的稳定 ASCII `key`；任意文本不能直接组成文件路径或 URL。行内代码、围栏代码、转义、旧 `::中文名::` 和未知 marker 保持原文。
+- marker 必须精确命中包内 catalog 的稳定 ASCII `key`；任意文本不能直接组成文件路径或 URL。不可编辑协议明确禁止模型输出 Markdown 图片和素材 URL；转写器同时拦截普通文本中的本插件图片，合法标准文件名重新规范化、未知文件名删除。行内代码、围栏代码、转义、旧 `::中文名::`、未知 marker 和普通外部图片保持原文。
 - 用户可以用 `customPrompt` 定义表情偏好和跳过场景；模式标记、合法标签清单、一回合最多一张、只处理面向用户正文等协议规则由插件在自定义内容之后重新声明，不能通过设置页删除。
 
 ## 当前语义
