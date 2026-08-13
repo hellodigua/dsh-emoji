@@ -4,11 +4,13 @@ import { useState, type CSSProperties } from 'react'
 import type {
   InjectFace, PropsLocale, PropsRuntime,
 } from '@deepseek-ai/dsh-client-ui-slots'
+import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import {
   EMOJI_DISPLAY_SIZES, EMOJI_DISPLAY_SIZE_EM, EMOJI_MODES, MAX_CUSTOM_PROMPT_LENGTH,
   type EmojiDisplaySize, type EmojiMode,
 } from '../settings-model.ts'
+import type { EmojiPackSummary } from '../pack-model.ts'
 import type {
   EmojiSettingsController, EmojiSettingsErrorCode, EmojiSettingsSnapshot,
 } from './settings-controller.ts'
@@ -31,6 +33,11 @@ export type EmojiSettingsCardProps =
   PropsRuntime<'settings.plugin.item'>
   & PropsLocale<typeof EMOJI_LOCALE_NS>
   & InjectFace<EmojiSettingsCardFace>
+
+/** 内置包的版本仅用于路由与缓存，不作为面向用户的设置元数据展示。 */
+export function visiblePackRef(pack: EmojiPackSummary): string | undefined {
+  return pack.builtIn ? undefined : `${pack.id}@${pack.version}`
+}
 
 interface ModeCopy {
   title: EmojiLocaleKey
@@ -81,7 +88,7 @@ const styles = {
     background: 'var(--dsw-alias-bg-layer-3)', color: 'var(--dsw-alias-label-primary)',
   },
   header: {
-    width: '100%', border: 0, background: 'none', color: 'inherit', textAlign: 'left',
+    width: '100%', appearance: 'none', border: 0, background: 'none', color: 'inherit', textAlign: 'left',
     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
     font: 'inherit', borderRadius: 12,
   },
@@ -197,9 +204,10 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
   const displayAlignEm = Number(((1 - displaySizeEm) / 2 - 0.05).toFixed(3))
   const title = props.t('title')
   return (
-    <li style={styles.card}>
+    <li data-dsh-emoji-settings-card="true" data-open={open ? 'true' : 'false'} style={styles.card}>
       <button
         type="button"
+        data-dsh-emoji-settings-header="true"
         style={styles.header}
         aria-expanded={open}
         aria-label={`${props.t(open ? 'collapse' : 'expand')}: ${title}`}
@@ -211,7 +219,7 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
         </span>
         {state.dirty ? <span style={styles.badge}>{props.t('unsaved')}</span> : null}
         <span style={styles.badge}>{modeSummary(state, props.t)}</span>
-        <span aria-hidden="true">{open ? '⌃' : '⌄'}</span>
+        <IconChevronDownOutline14 className="dsh-emoji-settings-chevron" />
       </button>
       {open
         ? (
@@ -260,6 +268,7 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                 {state.packs.map((pack, index) => {
                   const selected = pack.ref === state.draft.activePack
                   const optionId = `dsh-emoji-pack-option-${String(index)}`
+                  const visibleRef = visiblePackRef(pack)
                   return (
                     <button
                       key={pack.ref}
@@ -269,7 +278,9 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                       aria-checked={selected}
                       tabIndex={selected ? 0 : -1}
                       disabled={!editable}
-                      title={`${pack.name} · ${pack.version}${pack.builtIn ? ` · ${props.t('pack.builtin')}` : ''}`}
+                      title={visibleRef === undefined
+                        ? `${pack.name} · ${props.t('pack.builtin')}`
+                        : `${pack.name} · ${pack.version}`}
                       style={{
                         ...styles.packOption,
                         ...(selected ? styles.packOptionSelected : {}),
@@ -309,7 +320,9 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                   >
                     <span style={styles.packMeta}>
                       <span>{props.t('pack.emojiCount')}: {selectedPack.emojiCount}</span>
-                      <span>{selectedPack.id}@{selectedPack.version}</span>
+                      {visiblePackRef(selectedPack) === undefined
+                        ? null
+                        : <span>{visiblePackRef(selectedPack)}</span>}
                     </span>
                     <div style={styles.previews}>
                       {selectedPack.previews.map((preview) => {

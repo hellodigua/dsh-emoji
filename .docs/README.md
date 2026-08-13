@@ -61,13 +61,13 @@
 # 当前验证状态
 
 - DSH peers 已迁到 `^0.1.0-rc.2`，Cordis 与 Schemastery 分别迁到 `^4.0.1`、`^3.18.1`；本地开发用对应精确 devDependencies 固定类型检查和测试基线，部署仍由 Profile 提供共享 runtime。lockfile 已由真实 `0.1.0-rc.2` 包图重建，未再包含旧 rc.5 依赖。
-- 在这份真实 npm 类型与运行时包图上，typecheck、9 个测试文件共 89 项测试、build 和 pack dry-run 均通过；Host/Client 构建哈希与迁移前一致，说明本次只改变兼容契约和开发依赖，没有改变运行时代码。
+- 在这份真实 npm 类型与运行时包图上，typecheck、9 个测试文件共 91 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则。
 - 适配后的 `0.2.0` tarball 已安装到隔离 `DSH_HOME=/private/tmp/dsh-emoji-010rc2-runtime.7HzMUO`，并由固定的 npm `@deepseek-ai/dsh@0.1.0-rc.2` 在 `127.0.0.1:41939` 冷启动。浏览器确认“表情”卡片完整挂载，40 张包预览与 1 张尺寸预览全部成功加载，默认智能策略和正常尺寸正确，控制台无 warning/error；测试 Host 已停止，活动 3080 和用户 Profile 未修改。
 - 隔离 Profile 的 pnpm 仍会从自身视角报告插件 peers 缺失；新版 CLI 使用共享模块 fallback 让插件与 Host 共用同一 Cordis 实例。只有冷启动、Client 挂载和素材路由同时成功时，才能把该 warning 判为预期安装噪音。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
 - 旧 DSH `0.0.1-rc.2` checkout 的历史结果只用于对照，不属于当前支持范围，也不能替代上述 npm `0.1.0-rc.2` 验证。
 - 默认 `auto` guidance 从 2,219 字符降至 1,392 字符，减少约 37.3%；`frequent` 为 1,369 字符。测试逐项确认 40 个 `key=English/中文` 映射均保留，完整 `::emoji:` 模板只出现一次，并明确禁止模型自行输出 Markdown 图片或素材 URL。
-- 本机活动 `web` Profile 仍运行迁移前安装的 `0.2.0` 产物，PID `72439` 监听 `127.0.0.1:3080`；本次没有切换它。直接 URL 规范化修复此前已在该活动实例验证，升级活动 Host 前仍需重新安装本次依赖契约更新后的包。
+- 本机活动 `web` Profile 已安装本次 `0.2.0` 构建，Client bundle SHA-256 为 `79313b784f88b8144e7b3bcb59df2dc6dba2de0cfa192e65967564156f2efbbc`。正式 checkout 的 Host PID `79040` 监听 `127.0.0.1:3080`；真实浏览器确认表情卡片与内置卡片都使用同一个 SVG chevron，展开后旋转 180 度，边框和背景计算值一致，内置包只显示“大肥鱼(内置)”而不显示 `deepseek@8`，控制台无 warning/error。
 - 蓝色正面鲸鱼完整版使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致；新版隔离浏览器已确认全部 40 张预览在线加载，完整 catalog 和路由拒绝边界继续由自动化测试覆盖。
 - 旧 Bilibili 版本曾验证严肃内容跳过和端口边界；本次鲸鱼包仍需复跑这些扩展场景。
 - 仓库尚未发布 npm 包；转为 public 或公开发布素材前仍需先通过授权门槛。

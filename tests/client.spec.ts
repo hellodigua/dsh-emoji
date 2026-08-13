@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ClientConnectionRpc } from '@deepseek-ai/dsh-client-connection/client'
+
+// 此文件验证插件自己的设置状态和样式；DSH primitives 的根入口还会加载
+// Markdown/KaTeX CSS，在 Node 测试环境中用最小组件替身隔离该平台资源。
+vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
+  IconChevronDownOutline14: () => null,
+}))
+
 import {
-  EMOJI_CSS, EMOJI_SELECTOR, EMOJI_STYLE_ID, EmojiSettingsController, emojiCss,
+  EMOJI_CSS, EMOJI_SELECTOR, EMOJI_SETTINGS_CARD_SELECTOR, EMOJI_STYLE_ID, EmojiSettingsController, emojiCss,
   installEmojiStyles, setEmojiDisplaySize,
 } from '../src/client/index.ts'
 import {
@@ -10,6 +17,7 @@ import {
 } from '../src/settings-model.ts'
 import { en as emojiEn, zh as emojiZh } from '../src/client/locales.ts'
 import { BUILTIN_PACK_REF, type EmojiPackSummary } from '../src/pack-model.ts'
+import { visiblePackRef } from '../src/client/EmojiSettingsCard.tsx'
 
 const BUILTIN_PACK: EmojiPackSummary = {
   ref: BUILTIN_PACK_REF,
@@ -40,6 +48,8 @@ describe('Web Client inline style', () => {
   it('设置卡片提供键集合完全一致的中英文文案', () => {
     expect(emojiZh.title).toBe('表情')
     expect(emojiEn.title).toBe('Whale Emoji')
+    expect(emojiZh.expand).toBe('展开设置')
+    expect(emojiEn.collapse).toBe('Collapse settings')
     expect(emojiZh['action.save']).toBe('保存')
     expect(emojiEn['action.save']).toBe('Save')
     expect(emojiZh['prompt.label']).toBe('附加提示词（可选）')
@@ -50,12 +60,21 @@ describe('Web Client inline style', () => {
     expect(Object.keys(emojiZh).sort()).toEqual(Object.keys(emojiEn).sort())
   })
 
+  it('隐藏内置包的技术版本标识，但保留用户包版本用于区分', () => {
+    expect(visiblePackRef(BUILTIN_PACK)).toBeUndefined()
+    expect(visiblePackRef(CUSTOM_PACK)).toBe('my-whale@1.0.0')
+  })
+
   it('只声明本插件路由选择器和目标行内尺寸', () => {
     expect(EMOJI_SELECTOR).toBe('img[src*="/api/dsh-emoji/assets/"]:not([data-dsh-emoji-pack-preview])')
     expect(EMOJI_CSS).toContain('display: inline-block !important')
     expect(EMOJI_CSS).toContain('width: 1.5em !important')
     expect(EMOJI_CSS).toContain('height: 1.5em !important')
     expect(EMOJI_CSS).toContain('vertical-align: -0.3em !important')
+    expect(EMOJI_CSS).toContain(`${EMOJI_SETTINGS_CARD_SELECTOR}:hover`)
+    expect(EMOJI_CSS).toContain(`${EMOJI_SETTINGS_CARD_SELECTOR}[data-open="true"]`)
+    expect(EMOJI_CSS).toContain('[data-dsh-emoji-settings-header="true"]:focus-visible')
+    expect(EMOJI_CSS).toContain('transform: rotate(180deg)')
     expect(EMOJI_CSS).not.toContain('/api/dsh-meme/')
   })
 

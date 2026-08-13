@@ -37,7 +37,7 @@ export default defineConfig([
     dts: false,
     clean: false,
     deps: {
-      neverBundle: ['react', 'react/jsx-runtime'],
+      neverBundle: ['react', 'react/jsx-runtime', '@deepseek-ai/dsh-client-ui-primitives'],
     },
     outputOptions: {
       entryFileNames: 'client.js',

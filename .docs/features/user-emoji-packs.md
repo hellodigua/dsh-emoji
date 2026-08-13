@@ -49,11 +49,46 @@ Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在�
 
 ## 设置页与并发
 
-- 设置卡片以可水平滚动的单选按钮切换包，并展示当前包的 `id@version`、表情数量和全部 40 张素材；预览固定为一行，超出卡片宽度时水平滚动。
+- 设置卡片以可水平滚动的单选按钮切换包，并展示表情数量和全部 40 张素材；内置包隐藏技术标识 `deepseek@8`，用户包保留 `id@version` 以区分同名或不同版本。预览固定为一行，超出卡片宽度时水平滚动。
 - 上传与移除是独立包操作；选择表情包属于普通 Settings 草稿，必须点击保存并携带 revision。
 - Host 将 save/reset/upload/remove 串行化，避免“移除包”和“把它设为 active”并发穿透。
 - Client 在 Settings 保存或包操作期间阻止另一类写操作；跨标签失效在忙碌或有草稿时延后，不覆盖用户编辑。
 - 活动包和内置包不可移除。软移除非活动包后，如果草稿指向该包，草稿恢复为 Host 当前有效设置。
+
+## 远程目录方案（2026-08-13 调研，尚未实现）
+
+远程表情包可以在不修改 DSH core 的前提下接入。推荐在插件中固定一个受信任的 HTTPS 目录地址，由设置页展示“在线表情包”，但实际目录读取和 ZIP 下载均由 Host 完成；浏览器只通过 loopback-only RPC 请求目录和发起安装。这样不需要远端为 DSH Web 配置 CORS，也不再把 ZIP 转成 base64 穿过 Client RPC。
+
+目录不应接受用户输入的完整下载 URL。插件应固定目录 origin，例如 `https://emoji.example.com/`，目录条目只声明相对 `path`，Host 再解析为同源 URL。最小目录协议如下：
+
+```json
+{
+  "schemaVersion": 1,
+  "keySet": "dsh-emoji-core@1",
+  "catalogVersion": 3,
+  "generatedAt": "2026-08-13T00:00:00Z",
+  "packs": [
+    {
+      "id": "blue-whale",
+      "version": "1.2.0",
+      "name": { "zh-CN": "蓝鲸", "en": "Blue Whale" },
+      "path": "packs/blue-whale/1.2.0/6f...ab.zip",
+      "bytes": 1234567,
+      "sha256": "6f...ab",
+      "previewPath": "previews/blue-whale/1.2.0.png",
+      "license": "CC-BY-4.0"
+    }
+  ]
+}
+```
+
+目录中的 `id`、`version` 和 `keySet` 只是下载前展示与筛选信息，ZIP 内 `pack.json` 仍是安装事实；两者必须完全一致。`bytes` 用于下载时限流，`sha256` 必须在解包前核对，远端文件使用版本或内容哈希路径且永不原地覆盖。正式公开目录还应签名并在插件中固定公钥，同时记录已接受的 `catalogVersion`，以抵抗源站被篡改和目录回滚；内部测试可以先使用固定 HTTPS 域名、哈希和不可变路径。
+
+建议新增 `catalog-get` 与 `pack-install-remote` RPC。后者只接收目录中包的 `id@version`，不接收 URL；Host 在现有串行设置事务内重新解析目录条目，限制 HTTPS、固定 hostname/port、禁止凭据和片段、默认禁止重定向，并设置超时、`Content-Length` 预检与流式 20 MiB 硬上限。下载并验证 SHA-256 后直接复用 `EmojiPackStore.installArchive()`，因此 ZIP 路径、体积、完整 PNG 解码、40 个 key、冲突和不可变安装规则保持一致。
+
+“安装并使用”可以在安装成功后携带 Settings `expectedRevision` 切换 `activePack`；若下载已安装而设置 revision 冲突，应保留已安装包、不要覆盖用户草稿，并提示用户手动启用。新版本继续安装为新的 `<id>@<version>`，旧版本不得被覆盖或自动删除，以保持历史消息 URL 可回放。目录不可用时使用缓存目录并标记离线状态，本地“上传 ZIP”继续保留为兜底。
+
+托管层只需要静态 HTTPS：现有服务器/Nginx、对象存储加 CDN 都可以。内部试用也可用固定版本的 GitHub Release asset；正式分发更适合自有域名的对象存储/CDN，避免 `latest` 可变链接和跨域重定向给 Host 白名单增加复杂度。目录与包请求不得携带 DSH 用户标识、会话信息或凭据；设置页应说明下载会向托管方暴露常规网络元数据。
 
 ## 验证入口
 
@@ -69,3 +104,4 @@ Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在�
 - RPC 复用 DSH Connection 的 160 MiB HTTP carrier 上限，但插件自身在 base64 解码前把 ZIP 限制为 20 MiB。
 - Host 会完整解码 PNG 以确认文件可用，但不重编码素材；浏览器负责最终呈现。
 - 移除不回收磁盘；未来若增加永久删除，必须先设计可证明的历史引用或明确的破坏性确认流程。
+- 远程目录当前只是设计结论，v0.2.0 仍只支持本地 ZIP 上传；实现时不得演变为 Host 代用户请求任意 URL 的通用下载器。

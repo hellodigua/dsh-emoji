@@ -31,7 +31,11 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 9. Client controller 把 Host 错误码、非法响应和本地连接失败收敛为有限错误状态；设置卡片通过完整的 `zh/en` locale 字典显示所有标题、模式、尺寸、说明、状态、按钮和错误。
 10. `displaySize` 草稿会即时重建当前标签页的 namespaced CSS；放弃恢复已保存值，保存后其他标签页通过现有文档失效事件重读。尺寸只影响 Client，不触发 system prompt 变化。
 
-表情包选择使用单选语义的横向按钮轨道，直接展示包名称；数量超出卡片宽度时保持单行并水平滚动，不使用 Tab 或换行。选中按钮下方展示完整 `id@version`、数量，以及该包全部 40 张表情组成的单行横向预览轨道。键盘可用左右方向键、Home 和 End 切换，选择仍只是草稿，必须点击保存才影响新请求。
+表情包选择使用单选语义的横向按钮轨道，直接展示包名称；数量超出卡片宽度时保持单行并水平滚动，不使用 Tab 或换行。选中按钮下方展示数量，以及该包全部 40 张表情组成的单行横向预览轨道；内置包不显示仅供路由和缓存使用的 `deepseek@8`，用户包仍显示 `id@version` 以区分同名或不同版本。键盘可用左右方向键、Home 和 End 切换，选择仍只是草稿，必须点击保存才影响新请求。
+
+## 卡片界面一致性
+
+`settings.plugin.item` 的 slot 要求插件拥有自己的卡片渲染，但外壳遵循 DSH 内置 `PluginCard` 的交互视觉：使用 `@deepseek-ai/dsh-client-ui-primitives` 的 `IconChevronDownOutline14`，展开时旋转 180 度，并具有相同的 hover 边框、展开态背景和 `:focus-visible` 焦点框。所有选择器均以 `data-dsh-emoji-settings-*` 或 `dsh-emoji-settings-*` 命名，只作用于本插件卡片。2026-08-13 曾出现的文本字符 `⌄` / `⌃` 与缺失状态反馈问题已按此约定修复。
 
 ## 安全边界
 

@@ -5,8 +5,8 @@ export const EMOJI_LOCALE_NS = 'dsh-emoji'
 /** English is the canonical dictionary and defines the complete key set. */
 export const en = {
   title: 'Whale Emoji',
-  expand: 'Expand',
-  collapse: 'Collapse',
+  expand: 'Expand settings',
+  collapse: 'Collapse settings',
   description: 'Control how often AI responses use inline emoji',
   unsaved: 'Unsaved',
   'summary.loading': 'Loading settings…',
@@ -75,8 +75,8 @@ export type EmojiLocaleKey = keyof typeof en
 /** Simplified Chinese translation, checked against the canonical English keys. */
 export const zh = {
   title: '表情',
-  expand: '展开',
-  collapse: '收起',
+  expand: '展开设置',
+  collapse: '收起设置',
   description: '控制 AI 回复中表情的使用频率',
   unsaved: '未保存',
   'summary.loading': '正在读取设置…',

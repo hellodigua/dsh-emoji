@@ -30,6 +30,9 @@ importers:
       '@deepseek-ai/dsh-client-runtime':
         specifier: 0.1.0-rc.2
         version: 0.1.0-rc.2(2y54w6xitfa5wqklwcnz3mm2wy)
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: 0.1.0-rc.2
+        version: 0.1.0-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.1.0-rc.2(@deepseek-ai/cordis@4.0.1))
       '@deepseek-ai/dsh-client-ui-settings-plugins':
         specifier: 0.1.0-rc.2
         version: 0.1.0-rc.2(gevt7ks7edjoadxsul3hoihgx4)

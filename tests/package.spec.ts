@@ -19,6 +19,7 @@ describe('Profile Bundle package', () => {
     expect(packageJson.dsh.client.inject).toEqual(expect.arrayContaining([
       '@deepseek-ai/dsh-client-connection',
       '@deepseek-ai/dsh-client-locale',
+      '@deepseek-ai/dsh-client-ui-primitives',
       '@deepseek-ai/dsh-client-ui-settings-plugins',
       '@deepseek-ai/dsh-api-remotes',
     ]))
@@ -52,6 +53,13 @@ describe('Profile Bundle package', () => {
       'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'ASSETS.md', 'EMOJI_KEYS.md',
     ]))
     expect(existsSync(new URL('../cordis.patch.yml', import.meta.url))).toBe(true)
+  })
+
+  it('插件卡片使用 DSH 公共折叠图标，不再渲染平台相关的文本箭头', () => {
+    const source = readFileSync(new URL('../src/client/EmojiSettingsCard.tsx', import.meta.url), 'utf8')
+    expect(source).toContain("import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'")
+    expect(source).toContain('<IconChevronDownOutline14 className="dsh-emoji-settings-chevron" />')
+    expect(source).not.toMatch(/[⌃⌄]/)
   })
 
   it('公开语义契约与运行时 catalog 保持同一版本和完整 key 顺序', () => {

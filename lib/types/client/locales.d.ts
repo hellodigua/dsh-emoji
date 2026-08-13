@@ -3,8 +3,8 @@ export declare const EMOJI_LOCALE_NS = "dsh-emoji";
 /** English is the canonical dictionary and defines the complete key set. */
 export declare const en: {
     readonly title: "Whale Emoji";
-    readonly expand: "Expand";
-    readonly collapse: "Collapse";
+    readonly expand: "Expand settings";
+    readonly collapse: "Collapse settings";
     readonly description: "Control how often AI responses use inline emoji";
     readonly unsaved: "Unsaved";
     readonly 'summary.loading': "Loading settings…";

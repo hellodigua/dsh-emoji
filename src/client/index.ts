@@ -35,6 +35,7 @@ export {
 
 export const EMOJI_STYLE_ID = '@dsh-external/dsh-emoji/inline-style'
 export const EMOJI_SELECTOR = 'img[src*="/api/dsh-emoji/assets/"]:not([data-dsh-emoji-pack-preview])'
+export const EMOJI_SETTINGS_CARD_SELECTOR = '[data-dsh-emoji-settings-card="true"]'
 
 function verticalAlign(displaySize: EmojiDisplaySize): number {
   return Number(((1 - EMOJI_DISPLAY_SIZE_EM[displaySize]) / 2 - 0.05).toFixed(3))
@@ -52,6 +53,34 @@ export function emojiCss(displaySize: EmojiDisplaySize): string {
   border-radius: 0 !important;
   background: transparent !important;
   object-fit: contain !important;
+}
+
+${EMOJI_SETTINGS_CARD_SELECTOR} {
+  transition: border-color .16s, background .16s;
+}
+
+${EMOJI_SETTINGS_CARD_SELECTOR}:hover {
+  border-color: var(--dsw-alias-label-dimmed) !important;
+}
+
+${EMOJI_SETTINGS_CARD_SELECTOR}[data-open="true"] {
+  border-color: var(--dsw-alias-label-dimmed) !important;
+  background: var(--dsw-alias-bg-layer-2) !important;
+}
+
+[data-dsh-emoji-settings-header="true"]:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: -2px;
+}
+
+${EMOJI_SETTINGS_CARD_SELECTOR} .dsh-emoji-settings-chevron {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform .16s;
+}
+
+${EMOJI_SETTINGS_CARD_SELECTOR}[data-open="true"] .dsh-emoji-settings-chevron {
+  transform: rotate(180deg);
 }`
 }
 

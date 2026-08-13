@@ -49,6 +49,7 @@
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-primitives",
         "@deepseek-ai/dsh-client-ui-slots",
         "@deepseek-ai/dsh-client-ui-settings-plugins",
         "@deepseek-ai/dsh-api-remotes"
@@ -62,6 +63,7 @@
     "@deepseek-ai/dsh-client-connection": "^0.1.0-rc.2",
     "@deepseek-ai/dsh-client-locale": "^0.1.0-rc.2",
     "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.0-rc.2",
     "@deepseek-ai/dsh-client-ui-settings-plugins": "^0.1.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.2",
     "@deepseek-ai/dsh-host-apiproxy": "^0.1.0-rc.2",
@@ -79,6 +81,7 @@
     "@deepseek-ai/dsh-client-connection": "0.1.0-rc.2",
     "@deepseek-ai/dsh-client-locale": "0.1.0-rc.2",
     "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.0-rc.2",
     "@deepseek-ai/dsh-client-ui-settings-plugins": "0.1.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.2",
     "@deepseek-ai/dsh-home-paths": "0.1.0-rc.2",
