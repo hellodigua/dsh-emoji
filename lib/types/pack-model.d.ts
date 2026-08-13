@@ -1,5 +1,7 @@
 /** Host 与 Web Client 共用的用户表情包协议。 */
 export declare const EMOJI_PACK_SCHEMA_VERSION = 1;
+export declare const EMOJI_KEY_SET = "dsh-emoji-core@1";
+export type EmojiKeySet = typeof EMOJI_KEY_SET;
 export declare const BUILTIN_PACK_ID = "deepseek";
 export declare const BUILTIN_PACK_VERSION = "8";
 export declare const BUILTIN_PACK_REF = "deepseek@8";
@@ -26,6 +28,7 @@ export interface EmojiPackSummary {
 /** 用户 ZIP 中 pack.json 的最小固定语义格式。 */
 export interface EmojiPackManifest {
     schemaVersion: 1;
+    keySet: EmojiKeySet;
     id: string;
     name: string;
     version: string;

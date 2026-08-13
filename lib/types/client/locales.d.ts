@@ -20,11 +20,12 @@ export declare const en: {
     readonly 'mode.frequent.description': "Actively use one emoji in most suitable everyday responses.";
     readonly 'pack.label': "Emoji pack";
     readonly 'pack.builtin': "Built in";
+    readonly 'pack.builtinSuffix': " (Built in)";
     readonly 'pack.emojiCount': "Emoji";
     readonly 'pack.upload': "Upload ZIP";
     readonly 'pack.uploading': "Uploading…";
     readonly 'pack.remove': "Remove";
-    readonly 'pack.help': "A pack must provide pack.json and all 40 canonical PNG files. Removing a pack keeps immutable assets for historical messages.";
+    readonly 'pack.help': "A pack must declare keySet dsh-emoji-core@1 in pack.json and provide all 40 canonical PNG files. Removing a pack keeps immutable assets for historical messages.";
     readonly 'pack.preview.happy': "Happy";
     readonly 'pack.preview.laughing': "Laughing";
     readonly 'pack.preview.thinking': "Thinking";
@@ -57,7 +58,7 @@ export declare const en: {
     readonly 'error.rejected': "The Host did not accept these emoji settings.";
     readonly 'error.loadFailed': "Could not load emoji settings from the Host.";
     readonly 'error.saveFailed': "Could not save emoji settings to the Host.";
-    readonly 'error.packInvalid': "The ZIP is not a valid dsh-emoji pack. Check pack.json and all 40 canonical image names.";
+    readonly 'error.packInvalid': "The ZIP is not a valid dsh-emoji pack. Check keySet in pack.json and all 40 canonical image names.";
     readonly 'error.packTooLarge': "The emoji pack exceeds the upload, extracted, file, or image-dimension limit.";
     readonly 'error.packConflict': "The same pack ID and version already exist with different content. Increase the pack version.";
     readonly 'error.packNotFound': "The selected emoji pack is no longer installed.";
@@ -87,6 +88,7 @@ export declare const zh: {
     'mode.frequent.description': string;
     'pack.label': string;
     'pack.builtin': string;
+    'pack.builtinSuffix': string;
     'pack.emojiCount': string;
     'pack.upload': string;
     'pack.uploading': string;

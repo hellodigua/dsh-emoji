@@ -54,11 +54,14 @@ my-whale.zip
 ```json
 {
   "schemaVersion": 1,
+  "keySet": "dsh-emoji-core@1",
   "id": "my-whale",
   "name": "My Whale Emoji",
   "version": "1.0.0"
 }
 ```
+
+`schemaVersion` identifies the technical ZIP format, while `keySet` identifies the semantic set implemented by the images. Uploaded packs must currently declare `dsh-emoji-core@1`. See the [core semantic contract](EMOJI_KEYS.md) for the normative meaning, visual guidance, and boundaries of every key.
 
 The 40 filename keys are:
 
@@ -70,7 +73,7 @@ scared, facepalm, eye-roll, sigh, frustrated, playful, snickering,
 sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 ```
 
-Each key must have exactly one matching `.png`. IDs use lowercase letters, digits, and hyphens; versions use SemVer. Content at one `id@version` is immutable, so changed assets require a new version. Limits are 20 MiB per ZIP, 80 MiB expanded, 2 MiB per file, and 512 pixels per image dimension. Path traversal, extra files, missing keys, spoofed formats, and conflicting content are rejected.
+Each key must have exactly one matching `.png`. IDs use lowercase letters, digits, and hyphens; versions use SemVer. Content at one `id@version` is immutable, so changed assets require a new version. Limits are 20 MiB per ZIP, 80 MiB expanded, 2 MiB per file, and 512 pixels per image dimension. Path traversal, extra files, missing keys, unknown `keySet` values, spoofed formats, and conflicting content are rejected.
 
 User packs live under `$DSH_HOME/emoji-packs/` (default `~/.dsh/emoji-packs/`), while Settings stores only the active `id@version`. **Remove** hides a pack from the selector but intentionally retains its immutable bytes for historical messages. Uploading the exact same ZIP restores that version.
 
@@ -97,23 +100,24 @@ corepack pnpm build
 corepack pnpm pack --dry-run
 ```
 
-Development dependencies use `link:` references to the sibling `../test-hellodigua` checkout. Published artifacts do not depend on those local paths, and runtime code reads packaged files under `assets/` only. The current release targets DSH `0.0.1-rc.2` through `<0.0.2` and is intentionally incompatible with `rc.1`: the settings card depends on the newer `dsh-client-ui-settings-plugins`, while the Host uses `webServer` and `SettingsProvider`.
+pnpm 11 installs DSH development peers from npm instead of linking a sibling source checkout. The published artifact does not bundle the DSH runtime, and runtime code reads packaged files under `assets/` only. The current release targets DSH `^0.0.1-rc.5` and intentionally does not support the older rc.1/rc.2 npm contracts: the settings card depends on `dsh-client-ui-settings-plugins`, while the Host uses `webServer` and `SettingsProvider`.
 
-## Installing against the current DSH source
+## Installing with DSH rc.5
 
-Build this repository first, then run the current source CLI from `../test-hellodigua`:
+Build this repository first, then install it with the npm-published DSH rc.5 CLI. Do not substitute a global `dsh` or a source snapshot for this compatibility check:
 
 ```sh
-node --import tsx/esm apps/cli/src/bin.ts plugin --profile web add -w \
-  --ignore-scripts --config.auto-install-peers=false \
+npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web add -w \
+  --ignore-scripts \
   'file:/absolute/path/to/dsh-emoji'
+npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh web
 ```
 
 Restart the Web Host after installation, then verify the bundle through `--dump-config`, the Web boot manifest, and a real conversation. Remove it by package name:
 
 ```sh
-node --import tsx/esm apps/cli/src/bin.ts plugin --profile web remove -w \
-  --config.auto-install-peers=false @dsh-external/dsh-emoji
+npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web remove -w \
+  @dsh-external/dsh-emoji
 ```
 
 ## Known limitations

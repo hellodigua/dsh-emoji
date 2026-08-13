@@ -293,7 +293,9 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                       }}
                     >
                       {selected ? <span aria-hidden="true" style={styles.packOptionMark}>✓</span> : null}
-                      <span style={styles.packOptionName}>{pack.name}</span>
+                      <span style={styles.packOptionName}>
+                        {pack.name}{pack.builtIn ? props.t('pack.builtinSuffix') : ''}
+                      </span>
                     </button>
                   )
                 })}
@@ -343,14 +345,18 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                     }}
                   />
                 </label>
-                <button
-                  type="button"
-                  style={styles.button}
-                  disabled={!editable || selectedPack === undefined || selectedPack.builtIn || selectedPack.ref === state.persisted.activePack}
-                  onClick={() => { if (selectedPack !== undefined) props.removePack(selectedPack.ref) }}
-                >
-                  {props.t('pack.remove')}
-                </button>
+                {selectedPack !== undefined && !selectedPack.builtIn
+                  ? (
+                    <button
+                      type="button"
+                      style={styles.button}
+                      disabled={!editable || selectedPack.ref === state.persisted.activePack}
+                      onClick={() => { props.removePack(selectedPack.ref) }}
+                    >
+                      {props.t('pack.remove')}
+                    </button>
+                  )
+                  : null}
               </span>
               <span style={styles.description}>{props.t('pack.help')}</span>
             </section>

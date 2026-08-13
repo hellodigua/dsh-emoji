@@ -54,11 +54,14 @@ my-whale.zip
 ```json
 {
   "schemaVersion": 1,
+  "keySet": "dsh-emoji-core@1",
   "id": "my-whale",
   "name": "我的鲸鱼表情",
   "version": "1.0.0"
 }
 ```
+
+`schemaVersion` 表示 ZIP 技术格式，`keySet` 表示图片实现的语义集合。当前上传包必须声明 `dsh-emoji-core@1`；每个 key 的准确含义、相近语义边界和绘制建议见 [核心语义契约](EMOJI_KEYS.md)。
 
 40 个文件名 key 是：
 
@@ -70,7 +73,7 @@ scared, facepalm, eye-roll, sigh, frustrated, playful, snickering,
 sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 ```
 
-每个 key 必须且只能提供一个同名 `.png`。`id` 使用小写字母、数字和连字符，`version` 使用 SemVer；同一个 `id@version` 的内容不可覆盖，更新素材时必须提升版本。ZIP 上限 20 MiB，解压后上限 80 MiB，单文件上限 2 MiB，图片宽高均不得超过 512 像素；路径逃逸、额外文件、缺失 key、伪造格式和同版本冲突都会被拒绝。
+每个 key 必须且只能提供一个同名 `.png`。`id` 使用小写字母、数字和连字符，`version` 使用 SemVer；同一个 `id@version` 的内容不可覆盖，更新素材时必须提升版本。ZIP 上限 20 MiB，解压后上限 80 MiB，单文件上限 2 MiB，图片宽高均不得超过 512 像素；路径逃逸、额外文件、缺失 key、未知 `keySet`、伪造格式和同版本冲突都会被拒绝。
 
 用户包保存在 `$DSH_HOME/emoji-packs/`（默认 `~/.dsh/emoji-packs/`），Settings 只保存当前 `id@version`。从选择列表“移除”不会物理删除素材字节，因此历史消息里的版本化 URL 仍能回放；重新上传完全相同的 ZIP 可以恢复该版本。
 
@@ -97,23 +100,24 @@ corepack pnpm build
 corepack pnpm pack --dry-run
 ```
 
-开发依赖通过 `link:` 指向同级 `../test-hellodigua` 当前 checkout；发布产物自身不依赖这些本地路径，运行时只读取包内 `assets/`。当前版本面向 DSH `0.0.1-rc.2` 到 `<0.0.2` 的接口，明确不兼容 `rc.1`：设置卡片依赖新版 `dsh-client-ui-settings-plugins`，Host 使用 `webServer` 与 `SettingsProvider`。
+DSH 开发依赖由 pnpm 11 根据 peer 声明从 npm 安装，不再链接同级源码 checkout。发布产物自身不携带 DSH runtime，运行时只读取包内 `assets/`。当前版本面向 DSH `^0.0.1-rc.5`，明确不兼容旧的 rc.1/rc.2 npm 契约：设置卡片依赖 `dsh-client-ui-settings-plugins`，Host 使用 `webServer` 与 `SettingsProvider`。
 
-## 使用当前 DSH 源码安装
+## 使用 DSH rc.5 安装
 
-先在本仓库构建，再从 `../test-hellodigua` 使用当前源码 CLI 安装：
+先在本仓库构建，再用 npm 发布的 DSH rc.5 CLI 安装；不要用全局 `dsh` 或源码快照代替该兼容性验证：
 
 ```sh
-node --import tsx/esm apps/cli/src/bin.ts plugin --profile web add -w \
-  --ignore-scripts --config.auto-install-peers=false \
+npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web add -w \
+  --ignore-scripts \
   'file:/absolute/path/to/dsh-emoji'
+npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh web
 ```
 
 安装后重启 Web Host，并用 `--dump-config`、Web boot manifest 和实际会话共同验证。卸载时使用包名：
 
 ```sh
-node --import tsx/esm apps/cli/src/bin.ts plugin --profile web remove -w \
-  --config.auto-install-peers=false @dsh-external/dsh-emoji
+npx -p @deepseek-ai/dsh@0.0.1-rc.5 dsh plugin --profile web remove -w \
+  @dsh-external/dsh-emoji
 ```
 
 ## 已知限制

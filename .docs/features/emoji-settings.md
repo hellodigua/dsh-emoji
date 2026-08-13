@@ -20,7 +20,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 数据流
 
-1. Host half 通过 rc.2 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
+1. Host half 通过 rc.5 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
 2. Web Client 注入 `dsh-client-ui-settings-plugins`，并在其 `settings.plugin.item` 插槽注册配置卡片。
 3. Client 通过 `/dsh-emoji-settings` 自有 Connection RPC 执行 `get`、`save`、`reset`、`pack-upload`、`pack-remove`；包操作细节见 [`user-emoji-packs.md`](user-emoji-packs.md)。
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。

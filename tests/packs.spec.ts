@@ -1,19 +1,33 @@
 import { mkdir, readFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { homedir, tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { strToU8, zipSync, type Zippable } from 'fflate'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EMOJIS } from '../src/catalog.ts'
 import {
-  BUILTIN_PACK_REF, MAX_PACK_ARCHIVE_BYTES,
+  BUILTIN_PACK_REF, EMOJI_KEY_SET, MAX_PACK_ARCHIVE_BYTES,
 } from '../src/pack-model.ts'
-import { EmojiPackError, EmojiPackStore } from '../src/packs.ts'
+import { defaultEmojiPackRoot, EmojiPackError, EmojiPackStore } from '../src/packs.ts'
 
 const roots = new Set<string>()
 
 afterEach(async () => {
+  vi.unstubAllEnvs()
   await Promise.all([...roots].map(root => rm(root, { recursive: true, force: true })))
   roots.clear()
+})
+
+describe('emoji pack root', () => {
+  it('通过 DSH 官方 Home 规则解析默认目录、自定义目录和波浪号', () => {
+    vi.stubEnv('DSH_HOME', '')
+    expect(defaultEmojiPackRoot()).toBe(join(homedir(), '.dsh', 'emoji-packs'))
+
+    vi.stubEnv('DSH_HOME', './custom-dsh-home')
+    expect(defaultEmojiPackRoot()).toBe(resolve('custom-dsh-home', 'emoji-packs'))
+
+    vi.stubEnv('DSH_HOME', '~/custom-dsh-home')
+    expect(defaultEmojiPackRoot()).toBe(join(homedir(), 'custom-dsh-home', 'emoji-packs'))
+  })
 })
 
 async function store(): Promise<EmojiPackStore> {
@@ -28,6 +42,8 @@ async function pngArchive(options: {
   id?: string
   name?: string
   version?: string
+  keySet?: string
+  omitKeySet?: boolean
   omitKey?: string
   extra?: Record<string, Uint8Array>
   wrapper?: string
@@ -37,6 +53,7 @@ async function pngArchive(options: {
   const files: Zippable = {
     [`${prefix}pack.json`]: strToU8(JSON.stringify({
       schemaVersion: 1,
+      ...(options.omitKeySet === true ? {} : { keySet: options.keySet ?? EMOJI_KEY_SET }),
       id: options.id ?? 'my-whale',
       name: options.name ?? 'My Whale',
       version: options.version ?? '1.0.0',
@@ -126,6 +143,14 @@ describe('user emoji pack store', () => {
     expect(packs.resolveAsset('base64-pack', '2.1.0', 'happy.png')).toMatchObject({ mime: 'image/png' })
   })
 
+  it('上传包必须声明当前语义 keySet，并拒绝缺失或未知语义集', async () => {
+    const packs = await store()
+    await expect(packs.installArchive(await pngArchive({ id: 'missing-key-set', omitKeySet: true })))
+      .rejects.toMatchObject<Partial<EmojiPackError>>({ code: 'pack-invalid' })
+    await expect(packs.installArchive(await pngArchive({ id: 'future-key-set', keySet: 'dsh-emoji-core@2' })))
+      .rejects.toMatchObject<Partial<EmojiPackError>>({ code: 'pack-invalid' })
+  })
+
   it('拒绝缺 key、额外文件、路径逃逸、伪图片、过大归档和同版本不同内容', async () => {
     const packs = await store()
     await expect(packs.installArchive(await pngArchive({ omitKey: 'happy' })))
@@ -136,14 +161,14 @@ describe('user emoji pack store', () => {
       .rejects.toMatchObject<Partial<EmojiPackError>>({ code: 'pack-invalid' })
 
     const fake: Zippable = {
-      'pack.json': strToU8(JSON.stringify({ schemaVersion: 1, id: 'fake-pack', name: 'Fake', version: '1.0.0' })),
+      'pack.json': strToU8(JSON.stringify({ schemaVersion: 1, keySet: EMOJI_KEY_SET, id: 'fake-pack', name: 'Fake', version: '1.0.0' })),
       ...Object.fromEntries(EMOJIS.map(emoji => [`images/${emoji.key}.png`, strToU8('not a png')])),
     }
     await expect(packs.installArchive(zipSync(fake)))
       .rejects.toMatchObject<Partial<EmojiPackError>>({ code: 'pack-invalid' })
     const validPng = new Uint8Array(await readFile(new URL('../assets/emoji/deepseek/ds_01.png', import.meta.url)))
     const truncated: Zippable = {
-      'pack.json': strToU8(JSON.stringify({ schemaVersion: 1, id: 'truncated', name: 'Truncated', version: '1.0.0' })),
+      'pack.json': strToU8(JSON.stringify({ schemaVersion: 1, keySet: EMOJI_KEY_SET, id: 'truncated', name: 'Truncated', version: '1.0.0' })),
       ...Object.fromEntries(EMOJIS.map(emoji => [`images/${emoji.key}.png`, validPng.subarray(0, 40)])),
     }
     await expect(packs.installArchive(zipSync(truncated)))
@@ -228,6 +253,20 @@ describe('user emoji pack store', () => {
     await reloaded.initialize()
     expect(reloaded.has('my-whale@1.0.0')).toBe(false)
     expect(reloaded.resolveAsset('my-whale', '1.0.0', '../../outside.png')).toBeUndefined()
+  })
+
+  it('重启时将 0.2.0 之前缺少 keySet 的内部 manifest 兼容为 core@1', async () => {
+    const packs = await store()
+    await packs.installArchive(await pngArchive({ id: 'legacy-installed' }))
+    const manifestPath = join(packs.root, 'legacy-installed', '1.0.0', '.dsh-emoji-pack.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>
+    delete manifest.keySet
+    await writeFile(manifestPath, JSON.stringify(manifest))
+
+    const reloaded = new EmojiPackStore({ root: packs.root })
+    await reloaded.initialize()
+    expect(reloaded.has('legacy-installed@1.0.0')).toBe(true)
+    expect(reloaded.resolveAsset('legacy-installed', '1.0.0', 'happy.png')).toBeDefined()
   })
 
   it('重启扫描会重新解码磁盘图片并忽略已截断的包', async () => {

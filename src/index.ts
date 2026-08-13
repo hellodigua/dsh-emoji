@@ -154,6 +154,7 @@ export {
   BUILTIN_PACK_ID,
   BUILTIN_PACK_REF,
   BUILTIN_PACK_VERSION,
+  EMOJI_KEY_SET,
   EMOJI_PACK_SCHEMA_VERSION,
   EMOJI_PACK_REF_PATTERN,
   MAX_PACK_ARCHIVE_BYTES,
@@ -162,6 +163,7 @@ export {
   MAX_PACK_IMAGE_DIMENSION,
   emojiPackRef,
   type EmojiPackManifest,
+  type EmojiKeySet,
   type EmojiPackPreview,
   type EmojiPackSummary,
 } from './pack-model.ts'

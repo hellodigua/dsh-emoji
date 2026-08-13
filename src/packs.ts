@@ -5,9 +5,9 @@ import { existsSync, lstatSync } from 'node:fs'
 import {
   mkdir, readFile, readdir, rename, rm, unlink, writeFile,
 } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { unzipSync, type UnzipFileInfo } from 'fflate'
 import { PNG } from 'pngjs'
 import { EMOJIS, type EmojiCatalogEntry } from './catalog.ts'
@@ -15,6 +15,7 @@ import {
   BUILTIN_PACK_ID,
   BUILTIN_PACK_REF,
   BUILTIN_PACK_VERSION,
+  EMOJI_KEY_SET,
   EMOJI_PACK_SCHEMA_VERSION,
   MAX_PACK_ARCHIVE_BYTES,
   MAX_PACK_EXTRACTED_BYTES,
@@ -22,6 +23,7 @@ import {
   MAX_PACK_IMAGE_DIMENSION,
   emojiPackRef,
   type EmojiPackManifest,
+  type EmojiKeySet,
   type EmojiPackSummary,
 } from './pack-model.ts'
 
@@ -54,6 +56,7 @@ interface InstalledEmojiFile {
 
 interface InstalledEmojiPack {
   schemaVersion: 1
+  keySet: EmojiKeySet
   id: string
   name: string
   version: string
@@ -78,18 +81,8 @@ export interface EmojiPackStoreOptions {
   builtinRoot?: string
 }
 
-function defaultDshHome(): string {
-  const configured = process.env.DSH_HOME
-  if (configured === undefined || configured.trim() === '') return join(homedir(), '.dsh')
-  if (configured === '~') return homedir()
-  const expanded = configured.startsWith('~/') || configured.startsWith('~\\')
-    ? join(homedir(), configured.slice(2))
-    : configured
-  return resolve(expanded)
-}
-
 export function defaultEmojiPackRoot(): string {
-  return join(defaultDshHome(), 'emoji-packs')
+  return join(resolveDshHome(), 'emoji-packs')
 }
 
 function safeArchiveName(info: UnzipFileInfo): boolean {
@@ -116,14 +109,16 @@ function parseManifest(value: Uint8Array): EmojiPackManifest {
   }
   const candidate = parsed as Record<string, unknown>
   if (candidate.schemaVersion !== EMOJI_PACK_SCHEMA_VERSION
+    || candidate.keySet !== EMOJI_KEY_SET
     || typeof candidate.id !== 'string' || !PACK_ID_PATTERN.test(candidate.id)
     || candidate.id === BUILTIN_PACK_ID
     || typeof candidate.name !== 'string' || candidate.name.trim().length === 0 || candidate.name.length > 80
     || typeof candidate.version !== 'string' || !PACK_VERSION_PATTERN.test(candidate.version)) {
-    throw new EmojiPackError('pack-invalid', 'pack.json has an invalid schemaVersion, id, name, or version.')
+    throw new EmojiPackError('pack-invalid', 'pack.json has an invalid schemaVersion, keySet, id, name, or version.')
   }
   return {
     schemaVersion: EMOJI_PACK_SCHEMA_VERSION,
+    keySet: EMOJI_KEY_SET,
     id: candidate.id,
     name: candidate.name.trim(),
     version: candidate.version,
@@ -255,10 +250,11 @@ function decodeArchive(archive: Uint8Array): { manifest: InstalledEmojiPack; ima
   }
 }
 
-function isInstalledPack(value: unknown): value is InstalledEmojiPack {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+function parseInstalledPack(value: unknown): InstalledEmojiPack | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
   const candidate = value as Partial<InstalledEmojiPack>
-  return candidate.schemaVersion === 1
+  const valid = candidate.schemaVersion === 1
+    && (candidate.keySet === undefined || candidate.keySet === EMOJI_KEY_SET)
     && typeof candidate.id === 'string' && PACK_ID_PATTERN.test(candidate.id)
     && typeof candidate.name === 'string'
     && typeof candidate.version === 'string' && PACK_VERSION_PATTERN.test(candidate.version)
@@ -274,11 +270,14 @@ function isInstalledPack(value: unknown): value is InstalledEmojiPack {
         && Number.isSafeInteger(file.height) && file.height >= 1 && file.height <= MAX_PACK_IMAGE_DIMENSION
         && Number.isSafeInteger(file.bytes) && file.bytes >= 1 && file.bytes <= MAX_PACK_FILE_BYTES
     })
+  if (!valid) return undefined
+  return { ...candidate, keySet: EMOJI_KEY_SET } as InstalledEmojiPack
 }
 
 function builtinPack(root: string): RuntimeEmojiPack {
   return {
     schemaVersion: 1,
+    keySet: EMOJI_KEY_SET,
     id: BUILTIN_PACK_ID,
     name: '大肥鱼',
     version: BUILTIN_PACK_VERSION,
@@ -295,8 +294,9 @@ function builtinPack(root: string): RuntimeEmojiPack {
 
 async function loadInstalledRuntime(packRoot: string, expectedId?: string, expectedVersion?: string): Promise<RuntimeEmojiPack | undefined> {
   try {
-    const parsed: unknown = JSON.parse(await readFile(join(packRoot, INSTALLED_MANIFEST), 'utf8'))
-    if (!isInstalledPack(parsed)
+    const source: unknown = JSON.parse(await readFile(join(packRoot, INSTALLED_MANIFEST), 'utf8'))
+    const parsed = parseInstalledPack(source)
+    if (parsed === undefined
       || (expectedId !== undefined && parsed.id !== expectedId)
       || (expectedVersion !== undefined && parsed.version !== expectedVersion)) return undefined
     for (const descriptor of Object.values(parsed.files)) {

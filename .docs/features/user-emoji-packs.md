@@ -2,7 +2,7 @@
 
 ## 目标
 
-允许用户在 Web 设置页上传自己的微型表情素材，并复用 dsh-emoji 已发布的 40 个稳定 `::emoji:<key>::` 语义。v0.2.0 只支持“固定语义、替换图片”，不根据任意文件名自动生成新语义，也不修改 DSH core。
+允许用户在 Web 设置页上传自己的行内表情素材，并复用 dsh-emoji 已发布的 40 个稳定 `::emoji:<key>::` 语义。v0.2.0 只支持“固定语义、替换图片”，不根据任意文件名自动生成新语义，也不修改 DSH core。
 
 ## 包格式
 
@@ -13,7 +13,7 @@ pack.json
 images/<canonical-key>.png
 ```
 
-`pack.json` 固定为 schema 1，字段是 `id`、展示 `name` 和 SemVer `version`。`id` 只允许小写 ASCII 字母、数字和连字符，并保留 `deepseek` 给内置包。40 个 key 直接来自 `src/catalog.deepseek.ts`；每个 key 必须且只能有一个同名 PNG，不允许额外业务文件。
+`pack.json` 固定为 schema 1，并声明语义契约 `keySet: "dsh-emoji-core@1"`，其余字段是 `id`、展示 `name` 和 SemVer `version`。`schemaVersion` 负责 ZIP 技术格式，`keySet` 负责图片语义集合；新上传包缺少或使用未知 `keySet` 时拒绝安装。`id` 只允许小写 ASCII 字母、数字和连字符，并保留 `deepseek` 给内置包。40 个 key 直接来自 `src/catalog.deepseek.ts`，对外规范见 `EMOJI_KEYS.md`；每个 key 必须且只能有一个同名 PNG，不允许额外业务文件。
 
 ## 安装与持久化
 
@@ -21,9 +21,19 @@ images/<canonical-key>.png
 2. `src/packs.ts` 在解压前限制归档、单文件与声明解压体积，并拒绝绝对路径、反斜线、空字节和 `.`/`..` 段。
 3. 解压后校验唯一包根、manifest、完整 key 集、PNG 扩展名、完整解码、宽高和额外文件。
 4. Host 先写 `$DSH_HOME/emoji-packs/<id>/.install-*`，全部成功后原子 rename 到 `<version>/`；同一个 `id@version` 只允许完全相同的归档幂等重装，内容变化必须升级版本。
-5. 安装目录保存插件生成的 `.dsh-emoji-pack.json`。Host 重启扫描时重新验证其中的文件名、MIME、尺寸和大小，损坏或越界 manifest 不进入索引。
+5. 安装目录保存插件生成的 `.dsh-emoji-pack.json`。Host 重启扫描时重新验证其中的 keySet、文件名、MIME、尺寸和大小，损坏或越界 manifest 不进入索引；为避免升级后丢失既有用户包，只在读取旧内部 manifest 时把缺失的 `keySet` 兼容为 `dsh-emoji-core@1`。
 
-Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在设置页显示为“大肥鱼”。用户包列表来自文件系统索引，不把图片或 catalog 写进 `settings.yaml`。旧配置缺少 `activePack` 时由 schema 默认值自动迁移；配置引用已损坏或被外部移除的包时，设置 RPC 和转写链都 fail closed 回退内置包。
+Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在中文设置页显示为“大肥鱼(内置)”。内置包不可移除，因此选中它时不渲染“移除”按钮；用户包被选中时才显示该操作。用户包列表来自文件系统索引，不把图片或 catalog 写进 `settings.yaml`。旧配置缺少 `activePack` 时由 schema 默认值自动迁移；配置引用已损坏或被外部移除的包时，设置 RPC 和转写链都 fail closed 回退内置包。
+
+## 存储目录归属
+
+当前默认目录是 `$DSH_HOME/emoji-packs/<id>/<version>/`。这符合 DSH“所有用户数据进入单一 `$DSH_HOME`”以及子系统直接拥有顶层目录的现状：当前源码同样使用 `sessions/`、`attachments/v1/`、`storages/`、`.agent-presets/` 等目录。DSH 与 Cordis 目前没有为第三方插件自动分配私有数据目录的注册表或 `pluginDataDir` API，`$DSH_HOME/profiles/<profile>/` 只负责安装依赖和组合配置，不应存放用户上传素材。
+
+因此，`emoji-packs/` 不是违反官方目录规范，但名称和生命周期是 dsh-emoji 自己定义的。`src/packs.ts` 通过官方 `@deepseek-ai/dsh-home-paths` 的 `resolveDshHome()` 解析根目录，再追加固定的 `emoji-packs` feature root；空白 `DSH_HOME`、相对路径与 `~` 展开语义均由 DSH 统一拥有，不在插件内重复实现。
+
+官方 `ctx.storageDomain` 适合 schema 校验后的非会话 JSON/KV 状态，并由 Web 组合落到 `$DSH_HOME/storages/`；它不适合直接承载 40 张 PNG 与不可变目录发布事务。可以只把包索引放入 domain storage，但会把当前单一 manifest 事实拆成数据库与文件两份，现阶段收益不足。
+
+是否进一步迁移为 `$DSH_HOME/dsh-emoji/packs/` 属于产品命名选择，而不是现有 DSH 规范要求。它能更明确标注插件所有权，但需要迁移现有 `emoji-packs/`，并且没有比当前目录获得更多官方 API 支持；当前保持现状。
 
 ## 资源与历史稳定性
 
@@ -47,7 +57,8 @@ Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在�
 
 ## 验证入口
 
-- `tests/packs.spec.ts`：PNG 完整解码、包装目录、体积、路径、完整 key、格式、冲突、软移除、重启恢复和磁盘篡改。
+- `tests/packs.spec.ts`：官方 DSH Home 路径规则、keySet 校验与旧内部 manifest 兼容、PNG 完整解码、包装目录、体积、路径、完整 key、格式、冲突、软移除、重启恢复和磁盘篡改。
+- `tests/package.spec.ts`：发布物包含语义契约，且文档中的 40 个 key 与运行时 catalog 顺序完全一致。
 - `tests/settings.spec.ts`：已安装引用、RPC 错误 reason 和 Settings revision。
 - `tests/client.spec.ts`：双语字典、上传编码、选择草稿、移除和错误本地化。
 - `tests/integration.spec.ts`：真实 Cordis 下选择用户包后生成版本 URL并从 Host 路由读取。

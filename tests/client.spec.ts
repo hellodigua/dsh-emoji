@@ -45,6 +45,8 @@ describe('Web Client inline style', () => {
     expect(emojiZh['prompt.label']).toBe('附加提示词（可选）')
     expect(emojiZh['prompt.example']).toContain('严肃、正式或高风险内容不使用表情')
     expect(emojiEn['action.usePromptExample']).toBe('Use example')
+    expect(emojiZh['pack.builtinSuffix']).toBe('(内置)')
+    expect(emojiEn['pack.builtinSuffix']).toBe(' (Built in)')
     expect(Object.keys(emojiZh).sort()).toEqual(Object.keys(emojiEn).sort())
   })
 

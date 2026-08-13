@@ -9,6 +9,7 @@ import {
   buildEmojiGuidance,
   DEFAULT_CUSTOM_PROMPT,
   DEFAULT_EMOJI_SETTINGS,
+  EMOJI_KEY_SET,
   MAX_CUSTOM_PROMPT_LENGTH,
 } from '../src/index.ts'
 import {
@@ -191,7 +192,7 @@ describe('plugin-owned settings RPC', () => {
     const png = new Uint8Array(await readFile(new URL('../assets/emoji/deepseek/ds_01.png', import.meta.url)))
     const archive = zipSync({
       'pack.json': strToU8(JSON.stringify({
-        schemaVersion: 1, id: 'settings-pack', name: 'Settings Pack', version: '1.0.0',
+        schemaVersion: 1, keySet: EMOJI_KEY_SET, id: 'settings-pack', name: 'Settings Pack', version: '1.0.0',
       })),
       ...Object.fromEntries(EMOJIS.map(emoji => [`images/${emoji.key}.png`, png])),
     })

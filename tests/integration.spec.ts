@@ -12,7 +12,7 @@ import LlmService, {
 import { SettingsProvider, settingsNamespace, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import {
-  applyWithPackStore, DEFAULT_EMOJI_SETTINGS, EMOJI_GUIDANCE, EMOJI_SETTINGS_NAMESPACE,
+  applyWithPackStore, DEFAULT_EMOJI_SETTINGS, EMOJI_GUIDANCE, EMOJI_KEY_SET, EMOJI_SETTINGS_NAMESPACE,
 } from '../src/index.ts'
 import { EmojiPackStore } from '../src/packs.ts'
 import { EMOJIS } from '../src/catalog.ts'
@@ -73,7 +73,9 @@ async function setup(options?: { settings?: boolean }): Promise<{ ctx: Context; 
 async function customPackArchive(): Promise<Uint8Array> {
   const png = new Uint8Array(await readFile(new URL('../assets/emoji/deepseek/ds_02.png', import.meta.url)))
   return zipSync({
-    'pack.json': strToU8(JSON.stringify({ schemaVersion: 1, id: 'custom-blue', name: 'Custom Blue', version: '1.0.0' })),
+    'pack.json': strToU8(JSON.stringify({
+      schemaVersion: 1, keySet: EMOJI_KEY_SET, id: 'custom-blue', name: 'Custom Blue', version: '1.0.0',
+    })),
     ...Object.fromEntries(EMOJIS.map(emoji => [`images/${emoji.key}.png`, png])),
   })
 }

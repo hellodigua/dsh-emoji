@@ -1,7 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { EMOJIS } from '../src/catalog.ts'
+import { EMOJI_KEY_SET } from '../src/pack-model.ts'
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+const pnpmWorkspace = readFileSync(new URL('../pnpm-workspace.yaml', import.meta.url), 'utf8')
 
 describe('Profile Bundle package', () => {
   it('以 0.2.0 发布用户表情包能力，并固定 ZIP 解码依赖', () => {
@@ -22,13 +25,19 @@ describe('Profile Bundle package', () => {
     expect(packageJson.exports['./client'].default).toBe('./lib/client.js')
   })
 
-  it('明确只接入 DSH rc.2 契约，不保留 rc.1 设置包', () => {
+  it('通过 npm peer 接入 DSH rc.5 契约，不保留源码 link 或 rc.1 设置包', () => {
     const dshPeers = Object.entries(packageJson.peerDependencies)
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
     for (const [, range] of dshPeers) {
-      expect(range).toBe('>=0.0.1-rc.2 <0.0.2')
+      expect(range).toBe('^0.0.1-rc.5')
     }
+    expect(packageJson.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.1-rc.4')
+    expect(packageJson.peerDependencies['@deepseek-ai/schemastery']).toBe('^3.18.1-rc.4')
+    expect(Object.keys(packageJson.devDependencies).filter(name => name.startsWith('@deepseek-ai/'))).toEqual([])
+    expect(JSON.stringify(packageJson)).not.toContain('link:../test-hellodigua')
+    expect(pnpmWorkspace).toMatch(/^autoInstallPeers: true$/m)
+    expect(pnpmWorkspace).toMatch(/^nodeLinker: hoisted$/m)
     expect(packageJson.peerDependencies).not.toHaveProperty('@deepseek-ai/dsh-client-ui-plugin-config')
     expect(packageJson.devDependencies).not.toHaveProperty('@deepseek-ai/dsh-client-ui-plugin-config')
     expect(packageJson.dsh.client.inject).not.toContain('@deepseek-ai/dsh-client-ui-plugin-config')
@@ -36,9 +45,16 @@ describe('Profile Bundle package', () => {
 
   it('发布列表包含运行时需要的 Host、Client、patch 和资产', () => {
     expect(packageJson.files).toEqual(expect.arrayContaining([
-      'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'ASSETS.md',
+      'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'ASSETS.md', 'EMOJI_KEYS.md',
     ]))
     expect(existsSync(new URL('../cordis.patch.yml', import.meta.url))).toBe(true)
+  })
+
+  it('公开语义契约与运行时 catalog 保持同一版本和完整 key 顺序', () => {
+    const contract = readFileSync(new URL('../EMOJI_KEYS.md', import.meta.url), 'utf8')
+    expect(contract).toContain(EMOJI_KEY_SET)
+    const documentedKeys = [...contract.matchAll(/^\| `([a-z0-9-]+)` \|/gm)].map(match => match[1])
+    expect(documentedKeys).toEqual(EMOJIS.map(emoji => emoji.key))
   })
 
   it('运行脚本和源码不把 emoji 兄弟仓库作为运行时依赖', () => {

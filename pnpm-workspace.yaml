@@ -1,0 +1,6 @@
+# DSH peers are installed from npm for local builds; a deployed profile still
+# provides the runtime instances.
+autoInstallPeers: true
+minimumReleaseAgeExclude:
+  - '@deepseek-ai/*'
+nodeLinker: hoisted
