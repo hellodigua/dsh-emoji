@@ -22,7 +22,7 @@ Use `dsh-emoji@0.2.0` to pin this release. A plain `npm install dsh-emoji` only 
 
 ## How it works
 
-- The AI emits semantic markers such as `::emoji:happy::`, which the Host converts into inline images from the active emoji pack without another model call.
+- The AI emits semantic markers such as `::happy::`, which the Host converts into inline images from the active emoji pack without another model call.
 - Built-in and uploaded packs share 40 stable semantic keys, can be switched at any time, and support four display sizes.
 - Rewriting applies only to normal reply text and plugin images. Code, links, unknown markers, and other Markdown images are left unchanged, and repeated emoji are allowed.
 
@@ -38,7 +38,7 @@ You can also choose an emoji pack, adjust its display size, or use **Additional 
 
 ## Uploading your own emoji pack
 
-Click **Upload ZIP** in the same settings card. After upload, select the pack and save; the next model call uses it without a Host restart. A custom pack implements the same 40 stable semantic keys as the built-in pack, so the AI keeps emitting markers such as `::emoji:happy::` while only the final image changes.
+Click **Upload ZIP** in the same settings card. After upload, select the pack and save; the next model call uses it without a Host restart. A custom pack implements the same 40 stable semantic keys as the built-in pack, so the AI keeps emitting markers such as `::happy::` while only the final image changes.
 
 The ZIP may contain these files directly or inside one top-level directory:
 

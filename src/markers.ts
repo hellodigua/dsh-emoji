@@ -8,7 +8,7 @@ export const EMOJI_PROMPT_PREFIX = '[dsh-emoji:mode='
 
 /** 生成不随 UI locale 改变、可持久化到历史消息的稳定 ASCII 标签。 */
 export function emojiMarker(emoji: EmojiCatalogEntry): string {
-  return `::emoji:${emoji.key}::`
+  return `::${emoji.key}::`
 }
 
 /** 提供给模型的完整、有限 ASCII 表情标签词表。 */
@@ -40,7 +40,7 @@ export interface EmojiStreamRewriteOptions {
 }
 
 const emojiByMarkerBody = new Map<string, EmojiCatalogEntry>(
-  EMOJIS.map(emoji => [`emoji:${emoji.key}`, emoji]),
+  EMOJIS.map(emoji => [emoji.key, emoji]),
 )
 const emojiByAssetFile = new Map<string, EmojiCatalogEntry>(
   EMOJIS.flatMap(emoji => [[`${emoji.key}.png`, emoji] as const, [emoji.file, emoji] as const]),

@@ -29,10 +29,10 @@ function stream(text: string, reason: 'stop' | 'tool-calls' = 'stop'): AsyncIter
 describe('emoji marker rewrite', () => {
   it('允许重复表情，并在达到当前模式上限后移除多余标签', () => {
     const result = rewriteEmojiMarkersWithLimit([
-      '开心 ::emoji:happy::',
-      '还是开心 ::emoji:happy::',
-      '有点生气 ::emoji:angry::',
-      '最后大笑 ::emoji:laughing::',
+      '开心 ::happy::',
+      '还是开心 ::happy::',
+      '有点生气 ::angry::',
+      '最后大笑 ::laughing::',
     ].join('\n'), imageUrl, 3)
     expect(result).toEqual({
       text: [
@@ -67,7 +67,7 @@ describe('emoji marker rewrite', () => {
   it('移除无效直链后仍允许后续合法 marker 选择表情', () => {
     const result = rewriteEmojiMarkersWithLimit([
       '错误 ![Kuanghan](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/kuanghan.png)',
-      '有效 ::emoji:sweating::',
+      '有效 ::sweating::',
     ].join('\n'), imageUrl)
     expect(result.text).toBe([
       '错误 ',
@@ -77,80 +77,81 @@ describe('emoji marker rewrite', () => {
 
   it('保留未知、转义、代码和链接中的标签', () => {
     const source = [
-      '未知 ::emoji:missing:: 和旧标签 ::开心::，转义 \\::emoji:happy::，行内 `::emoji:doge::`。',
+      '未知 ::missing::、中文标签 ::开心:: 和带命名空间文本 ::emoji:happy::，转义 \\::happy::，行内 `::doge::`。',
       '转义 \\![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)，行内 `![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)`。',
-      '[链接 ::emoji:happy::](https://example.com/::emoji:angry::)',
-      '[嵌套 [::emoji:happy::]](https://example.com)',
+      '[链接 ::happy::](https://example.com/::angry::)',
+      '[嵌套 [::happy::]](https://example.com)',
       '[多行链接',
-      '::emoji:happy::](https://example.com)',
-      '[快捷引用 ::emoji:happy::]',
+      '::happy::](https://example.com)',
+      '[快捷引用 ::happy::]',
       '',
-      '[快捷引用 ::emoji:happy::]: https://example.com',
-      '<https://example.com/::emoji:sad::>',
-      'https://example.com/::emoji:thinking:: ',
-      'HTTPS://example.com/::emoji:thinking:: ',
-      '![普通图片 ::emoji:happy::](https://example.com/plain.png)',
+      '[快捷引用 ::happy::]: https://example.com',
+      '<https://example.com/::sad::>',
+      'https://example.com/::thinking:: ',
+      'HTTPS://example.com/::thinking:: ',
+      '![普通图片 ::happy::](https://example.com/plain.png)',
       '',
-      '    ::emoji:angry::',
+      '    ::angry::',
       '```md',
-      '::emoji:speechless::',
+      '::speechless::',
       '![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)',
       '```',
       '> ~~~md',
-      '> ::emoji:happy::',
+      '> ::happy::',
       '> ~~~',
       '- ~~~md',
-      '  ::emoji:sad::',
+      '  ::sad::',
       '  ~~~',
-      '正文 ::emoji:happy::',
+      '正文 ::happy::',
     ].join('\n')
     const result = rewriteEmojiMarkersWithLimit(source, imageUrl, 10)
-    expect(result.text).toContain('::emoji:missing::')
+    expect(result.text).toContain('::missing::')
     expect(result.text).toContain('::开心::')
-    expect(result.text).toContain(String.raw`\::emoji:happy::`)
-    expect(result.text).toContain('`::emoji:doge::`')
+    expect(result.text).toContain('::emoji:happy::')
+    expect(result.text).toContain(String.raw`\::happy::`)
+    expect(result.text).toContain('`::doge::`')
     expect(result.text).toContain(String.raw`\![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)`)
     expect(result.text).toContain('`![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)`')
-    expect(result.text).toContain('[链接 ::emoji:happy::](https://example.com/::emoji:angry::)')
-    expect(result.text).toContain('[嵌套 [::emoji:happy::]](https://example.com)')
-    expect(result.text).toContain('[多行链接\n::emoji:happy::](https://example.com)')
-    expect(result.text).toContain('[快捷引用 ::emoji:happy::]')
-    expect(result.text).toContain('[快捷引用 ::emoji:happy::]: https://example.com')
-    expect(result.text).toContain('<https://example.com/::emoji:sad::>')
-    expect(result.text).toContain('https://example.com/::emoji:thinking:: ')
-    expect(result.text).toContain('HTTPS://example.com/::emoji:thinking:: ')
-    expect(result.text).toContain('![普通图片 ::emoji:happy::](https://example.com/plain.png)')
-    expect(result.text).toContain('    ::emoji:angry::')
-    expect(result.text).toContain('```md\n::emoji:speechless::\n![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)\n```')
+    expect(result.text).toContain('[链接 ::happy::](https://example.com/::angry::)')
+    expect(result.text).toContain('[嵌套 [::happy::]](https://example.com)')
+    expect(result.text).toContain('[多行链接\n::happy::](https://example.com)')
+    expect(result.text).toContain('[快捷引用 ::happy::]')
+    expect(result.text).toContain('[快捷引用 ::happy::]: https://example.com')
+    expect(result.text).toContain('<https://example.com/::sad::>')
+    expect(result.text).toContain('https://example.com/::thinking:: ')
+    expect(result.text).toContain('HTTPS://example.com/::thinking:: ')
+    expect(result.text).toContain('![普通图片 ::happy::](https://example.com/plain.png)')
+    expect(result.text).toContain('    ::angry::')
+    expect(result.text).toContain('```md\n::speechless::\n![Hehe](http://127.0.0.1:3080/api/dsh-emoji/assets/tieba-test/1.0.0/hehe.png)\n```')
     expect(result.text.match(/^```md$/gmu)).toHaveLength(1)
-    expect(result.text).toContain('> ~~~md\n> ::emoji:happy::\n> ~~~')
-    expect(result.text).toContain('- ~~~md\n  ::emoji:sad::\n  ~~~')
+    expect(result.text).toContain('> ~~~md\n> ::happy::\n> ~~~')
+    expect(result.text).toContain('- ~~~md\n  ::sad::\n  ~~~')
     expect(result.text).toContain('正文 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)')
     expect(result.emojiCount).toBe(1)
   })
 
   it('按 CommonMark 上下文区分普通方括号、缩进段落、引用链接和代码容器', () => {
     const source = [
-      '[普通括号 ::emoji:happy::]',
+      '[普通括号 ::happy::]',
       '普通段落',
-      '    ::emoji:angry::',
+      '    ::angry::',
       '',
-      '    ::emoji:sad::',
+      '    ::sad::',
       '> ~~~',
-      '> ::emoji:speechless::',
-      '正文 ::emoji:celebrate::',
+      '> ::speechless::',
+      '正文 ::celebrate::',
       '',
-      '[快捷引用 ::emoji:thinking::]',
+      '[快捷引用 ::thinking::]',
       '',
-      '[快捷引用 ::emoji:thinking::]: https://example.com',
+      '[快捷引用 ::thinking::]: https://example.com',
     ].join('\n')
     const result = rewriteEmojiMarkersWithLimit(source, imageUrl, 10)
     expect(result.text).toContain('[普通括号 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)]')
     expect(result.text).toContain('普通段落\n    ![Angry](http://127.0.0.1:3080/assets/ds_05.png)')
-    expect(result.text).toContain('    ::emoji:sad::')
-    expect(result.text).toContain('> ~~~\n> ::emoji:speechless::\n正文 ![Celebrate](http://127.0.0.1:3080/assets/ds_34.png)')
-    expect(result.text).toContain('[快捷引用 ::emoji:thinking::]')
-    expect(result.text).toContain('[快捷引用 ::emoji:thinking::]: https://example.com')
+    expect(result.text).toContain('    ::sad::')
+    expect(result.text).toContain('> ~~~\n> ::speechless::\n正文 ![Celebrate](http://127.0.0.1:3080/assets/ds_34.png)')
+    expect(result.text).toContain('[快捷引用 ::thinking::]')
+    expect(result.text).toContain('[快捷引用 ::thinking::]: https://example.com')
     expect(result.emojiCount).toBe(3)
   })
 
@@ -158,7 +159,7 @@ describe('emoji marker rewrite', () => {
     const source = [
       '普通 ``code',
       'span`` 后文',
-      '正文 ::emoji:happy::',
+      '正文 ::happy::',
     ].join('\n')
     const result = rewriteEmojiMarkersWithLimit(source, imageUrl)
     expect(result.text).toContain('普通 ``code\nspan`` 后文')
@@ -167,11 +168,11 @@ describe('emoji marker rewrite', () => {
   })
 
   it('保留旧 rewriteEmojiMarkers 的第三参数和 directive 返回契约', () => {
-    expect(rewriteEmojiMarkers('第一张 ::emoji:happy:: 第二张 ::emoji:sad::', imageUrl)).toEqual({
+    expect(rewriteEmojiMarkers('第一张 ::happy:: 第二张 ::sad::', imageUrl)).toEqual({
       text: '第一张 ![Happy](http://127.0.0.1:3080/assets/ds_01.png) 第二张 ',
       directive: 'emoji',
     })
-    expect(rewriteEmojiMarkers('后续 ::emoji:happy::', imageUrl, 'emoji')).toEqual({
+    expect(rewriteEmojiMarkers('后续 ::happy::', imageUrl, 'emoji')).toEqual({
       text: '后续 ',
       directive: 'emoji',
     })
@@ -187,8 +188,8 @@ describe('emoji marker rewrite', () => {
 
 describe('emoji stream rewrite', () => {
   it('保留流式 delta，并在 block-end 把标签改成图片', async () => {
-    const chunks = await collect(rewriteEmojiStream(stream('你好 ::emoji:happy::'), { imageUrl }))
-    expect(chunks.find(chunk => chunk.type === 'text-delta')).toMatchObject({ text: '你好 ::emoji:happy::' })
+    const chunks = await collect(rewriteEmojiStream(stream('你好 ::happy::'), { imageUrl }))
+    expect(chunks.find(chunk => chunk.type === 'text-delta')).toMatchObject({ text: '你好 ::happy::' })
     expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
       block: { type: 'text', text: '你好 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)' },
     })
@@ -212,7 +213,7 @@ describe('emoji stream rewrite', () => {
   it('跨 text block 累计计数，并允许相同表情保留到模式上限', async () => {
     const source = (async function* (): AsyncIterable<StreamChunk> {
       for (let index = 0; index < 5; index += 1) {
-        const text = `第${String(index + 1)}段 ::emoji:happy::`
+        const text = `第${String(index + 1)}段 ::happy::`
         yield { type: 'block-start', index, blockType: 'text' }
         yield { type: 'block-end', index, block: { type: 'text', text } }
       }

@@ -32,7 +32,7 @@ class MemorySettings extends SettingsProvider {
 }
 
 class TextAdapter extends LlmAdapter {
-  text = '你好 ::emoji:happy::'
+  text = '你好 ::happy::'
 
   async *stream(): AsyncIterable<StreamChunk> {
     yield { type: 'block-start', index: 0, blockType: 'text' }
@@ -113,7 +113,7 @@ describe('real Cordis service composition', () => {
       provider: 'test', model: 'test', messages: [], system,
     }
     // Loader 会给实际 LLM 服务附带 scope filter；插件监听必须是 global，
-    // 否则提示词生效但最终正文中的 ::emoji:<key>:: 不会进入转写器。
+    // 否则提示词生效但最终正文中的 ::<key>:: 不会进入转写器。
     const foreignScope = { [Context.filter]: () => false }
     const stream = ctx.waterfall(
       foreignScope as never,
@@ -140,7 +140,7 @@ describe('real Cordis service composition', () => {
     for await (const chunk of ctx.llm.stream(request)) {
       if (chunk.type === 'block-end' && chunk.block.type === 'text') text = chunk.block.text
     }
-    expect(text).toBe('你好 ::emoji:happy::')
+    expect(text).toBe('你好 ::happy::')
   })
 
   it('disposer 移除提示、流转写和素材路由', async () => {
@@ -159,7 +159,7 @@ describe('real Cordis service composition', () => {
 
     await fiber.dispose()
     expect(renderPrompt(await context.systemPrompt.assemble())).not.toContain('dsh-emoji:mode=')
-    expect(await modelText(context)).toBe('你好 ::emoji:happy::')
+    expect(await modelText(context)).toBe('你好 ::happy::')
     expect((await fetch(`http://127.0.0.1:${String(context.webServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png`)).status).toBe(404)
   })
 
@@ -172,7 +172,7 @@ describe('real Cordis service composition', () => {
     await vi.waitFor(async () => {
       expect(renderPrompt(await ctx.systemPrompt.assemble())).not.toContain('dsh-emoji:mode=')
     })
-    expect(await modelText(ctx)).toBe('你好 ::emoji:happy::')
+    expect(await modelText(ctx)).toBe('你好 ::happy::')
 
     await ctx.settings.update(ns, {
       mode: 'frequent',
@@ -191,7 +191,7 @@ describe('real Cordis service composition', () => {
 
   it('智能模式保留三张，高频模式保留四张，并允许重复表情', async () => {
     const { ctx, adapter } = await setup({ settings: true })
-    adapter.text = Array.from({ length: 5 }, (_, index) => `第${String(index + 1)}句 ::emoji:happy::`).join('\n')
+    adapter.text = Array.from({ length: 5 }, (_, index) => `第${String(index + 1)}句 ::happy::`).join('\n')
 
     expect((await modelText(ctx)).match(/!\[Happy\]\(/g)).toHaveLength(3)
 

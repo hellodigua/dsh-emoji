@@ -11,7 +11,7 @@
 
 # 关键功能
 
-- system prompt 使用英文技术默认值，只声明一次 `::emoji:<key>::` 模板，再以紧凑的 `key=English/中文` 目录提供 40 个合法 key；marker 不随 UI locale 改变，也不注册表情 Function Call。
+- system prompt 使用英文技术默认值，只声明一次 `::<key>::` 模板，再以紧凑的 `key=English/中文` 目录提供 40 个合法 key；marker 不随 UI locale 改变，也不注册表情 Function Call。
 - Host 用 global `llm/stream` 监听跨过运行时 scope，根据请求内模式标记把最终 text block 中的合法标签确定性转成素材 Markdown，不触发第二次模型调用。
 - `/api/dsh-emoji/assets/` 按运行时表情包索引白名单提供 PNG，内置包仍来自发布产物。
 - v0.2.0 支持从设置页上传实现 `dsh-emoji-core@1` 中 40 个稳定 key 的 PNG ZIP 表情包，按不可变 `id@version` 保存到 `$DSH_HOME/emoji-packs/`，并可预览、启用和软移除；新上传包必须声明 `keySet`。
@@ -67,6 +67,6 @@
 - 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 102 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界与易误判反例。
 - 精确 `@deepseek-ai/dsh@0.1.0-rc.6` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- `auto` guidance 为 1,382 字符，`frequent` 为 1,366 字符；40 个 `key=English/中文` 映射完整，`::emoji:` 模板只声明一次，并明确禁止模型直接输出 Markdown 图片或素材 URL。
+- `auto` guidance 为 1,376 字符，`frequent` 为 1,360 字符；system prompt 只声明一次 `::<key>::` 模板，并明确禁止模型直接输出 Markdown 图片或素材 URL，40 个 `key=English/中文` 映射保持完整。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
 - 公共包名为 `dsh-emoji`；`npm run release:check` 是 CI 与本地演练入口，`npm run release` 是维护者唯一正式发布入口。

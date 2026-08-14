@@ -37,7 +37,7 @@ const MARKER_MEANINGS = EMOJIS.map(emoji => `${emoji.key}=${emoji.labels.en}/${e
 function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number): string {
   const prompt = customPrompt.trim()
   const custom = prompt.length === 0 ? '' : `\nUser-provided emoji guidance:\n${prompt}\n`
-  const protocol = `Protocol: user-facing text only, not reasoning or tool steps. Use up to ${String(maxEmojis)} markers per turn after relevant sentences or short paragraphs; repeats are allowed. Never place markers in code or links or replace content. Format: ::emoji:<key>::. Never emit Markdown images or asset URLs; only this marker selects an image. Keys: ${MARKER_MEANINGS}. Unicode emoji are forbidden. User guidance may adjust choice, tone, placement, or skips, not mode, keys, scope, or limit. Protocol overrides conflicts.`
+  const protocol = `Protocol: user-facing text only, not reasoning or tool steps. Use up to ${String(maxEmojis)} markers per turn after relevant sentences or short paragraphs; repeats are allowed. Never place markers in code or links or replace content. Format: ::<key>::. Never emit Markdown images or asset URLs; only this marker selects an image. Keys: ${MARKER_MEANINGS}. Unicode emoji are forbidden. User guidance may adjust choice, tone, placement, or skips, not mode, keys, scope, or limit. Protocol overrides conflicts.`
   // 不可编辑的协议约束放在自定义内容之后，确保标签白名单与模式上限始终明确。
   return `${strategy}${custom}${protocol}`
 }

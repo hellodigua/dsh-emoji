@@ -66,12 +66,13 @@ describe('dynamic emoji guidance', () => {
       expect(guidance).toContain('repeats are allowed')
       expect(guidance).toContain('Never place markers in code or links')
       expect(guidance).not.toContain('User-provided emoji guidance')
-      expect(guidance).toContain('Format: ::emoji:<key>::')
+      expect(guidance).toContain('Format: ::<key>::')
       expect(guidance).toContain('Never emit Markdown images or asset URLs')
       for (const emoji of EMOJIS) {
         expect(guidance).toContain(`${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`)
       }
-      expect(guidance.match(/::emoji:/g)).toHaveLength(1)
+      expect(guidance.match(/::<key>::/g)).toHaveLength(1)
+      expect(guidance).not.toContain('::emoji:')
       expect(guidance.length).toBeLessThan(1400)
       expect(guidance).not.toContain('::开心::')
       expect(guidance).toContain(`[dsh-emoji:mode=${mode}]`)
