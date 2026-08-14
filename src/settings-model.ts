@@ -7,6 +7,13 @@ export const EMOJI_MODES = ['off', 'auto', 'frequent'] as const
 
 export type EmojiMode = (typeof EMOJI_MODES)[number]
 
+/** 各策略在程序层允许保留的单回合表情数量。 */
+export const EMOJI_PER_TURN_LIMIT: Readonly<Record<EmojiMode, number>> = Object.freeze({
+  off: 0,
+  auto: 3,
+  frequent: 4,
+})
+
 /** 行内表情的有限显示尺寸；值是稳定协议，具体 em 映射由插件定义。 */
 export const EMOJI_DISPLAY_SIZES = ['small', 'normal', 'large', 'xlarge'] as const
 

@@ -55,14 +55,16 @@ async function setup() {
 }
 
 describe('dynamic emoji guidance', () => {
-  it('三个模式生成英文技术默认值、稳定 ASCII 标签和单张上限', () => {
+  it('三个模式生成英文技术默认值、稳定 ASCII 标签和分档多图上限', () => {
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'off' })).toBe('')
     expect(DEFAULT_CUSTOM_PROMPT).toBe('')
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'auto' })).toContain('friendly, encouraging')
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' })).toContain('most everyday responses')
-    for (const mode of ['auto', 'frequent'] as const) {
+    for (const [mode, limit] of [['auto', 3], ['frequent', 4]] as const) {
       const guidance = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode })
-      expect(guidance).toContain('at most one marker per turn after its sentence or short paragraph')
+      expect(guidance).toContain(`Use up to ${String(limit)} markers per turn`)
+      expect(guidance).toContain('repeats are allowed')
+      expect(guidance).toContain('Never place markers in code or links')
       expect(guidance).not.toContain('User-provided emoji guidance')
       expect(guidance).toContain('Format: ::emoji:<key>::')
       expect(guidance).toContain('Never emit Markdown images or asset URLs')
@@ -87,7 +89,7 @@ describe('dynamic emoji guidance', () => {
 
     const empty = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, customPrompt: '   ' })
     expect(empty).not.toContain('User-provided emoji guidance')
-    expect(empty).toContain('at most one marker per turn')
+    expect(empty).toContain('Use up to 3 markers per turn')
     expect(empty).toContain('Keys:')
   })
 })

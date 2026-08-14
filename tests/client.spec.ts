@@ -54,6 +54,8 @@ describe('Web Client inline style', () => {
     expect(emojiEn['action.save']).toBe('Save')
     expect(emojiZh['prompt.label']).toBe('附加提示词（可选）')
     expect(emojiZh['prompt.example']).toContain('严肃、正式或高风险内容不使用表情')
+    expect(emojiZh['limit.note']).toContain('智能模式每回合最多 3 张')
+    expect(emojiEn['limit.note']).toContain('Frequent keeps up to 4')
     expect(emojiEn['action.usePromptExample']).toBe('Use example')
     expect(emojiZh['pack.builtinSuffix']).toBe('(内置)')
     expect(emojiEn['pack.builtinSuffix']).toBe(' (Built in)')

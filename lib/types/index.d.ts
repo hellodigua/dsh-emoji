@@ -15,9 +15,9 @@ export declare const EMOJI_GUIDANCE: string;
 export declare function applyWithPackStore(ctx: Context, config: EmojiSettings | undefined, packs: EmojiPackStore): Promise<void>;
 export declare function apply(ctx: Context, config?: EmojiSettings): Promise<void>;
 export { CATALOG_SOURCE_REVISION, EMOJIS, emojiByAsset, emojiById } from './catalog.ts';
-export { EMOJI_MARKERS, EMOJI_PROMPT_PREFIX, emojiMarker, emojiModeFromPrompt, rewriteEmojiMarkers, rewriteEmojiStream, } from './markers.ts';
+export { EMOJI_MARKERS, EMOJI_PROMPT_PREFIX, emojiMarker, emojiModeFromPrompt, rewriteEmojiMarkers, rewriteEmojiMarkersWithLimit, rewriteEmojiStream, } from './markers.ts';
 export { searchEmoji } from './search.ts';
 export { BUILTIN_PACK_ID, BUILTIN_PACK_REF, BUILTIN_PACK_VERSION, EMOJI_KEY_SET, EMOJI_PACK_SCHEMA_VERSION, EMOJI_PACK_REF_PATTERN, MAX_PACK_ARCHIVE_BYTES, MAX_PACK_EXTRACTED_BYTES, MAX_PACK_FILE_BYTES, MAX_PACK_IMAGE_DIMENSION, emojiPackRef, type EmojiPackManifest, type EmojiKeySet, type EmojiPackPreview, type EmojiPackSummary, } from './pack-model.ts';
 export { EmojiPackError, EmojiPackStore, defaultEmojiPackRoot, type EmojiPackErrorCode, type EmojiPackStoreOptions, type ResolvedEmojiAsset, } from './packs.ts';
-export { DEFAULT_EMOJI_SETTINGS, DEFAULT_CUSTOM_PROMPT, EMOJI_DISPLAY_SIZES, EMOJI_DISPLAY_SIZE_EM, EMOJI_MODES, EMOJI_SETTINGS_NAMESPACE, EMOJI_SETTINGS_RPC_CHANNEL, MAX_CUSTOM_PROMPT_LENGTH, type EmojiMode, type EmojiDisplaySize, type EmojiSettings, type EmojiSettingsDocument, } from './settings-model.ts';
+export { DEFAULT_EMOJI_SETTINGS, DEFAULT_CUSTOM_PROMPT, EMOJI_DISPLAY_SIZES, EMOJI_DISPLAY_SIZE_EM, EMOJI_MODES, EMOJI_PER_TURN_LIMIT, EMOJI_SETTINGS_NAMESPACE, EMOJI_SETTINGS_RPC_CHANNEL, MAX_CUSTOM_PROMPT_LENGTH, type EmojiMode, type EmojiDisplaySize, type EmojiSettings, type EmojiSettingsDocument, } from './settings-model.ts';
 //# sourceMappingURL=index.d.ts.map

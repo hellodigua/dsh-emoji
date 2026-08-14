@@ -13,16 +13,28 @@ export interface EmojiMarkerRewriteResult {
     readonly text: string;
     readonly directive: MarkerDirective;
 }
+/** 带数量上限的标签转写结果。 */
+export interface EmojiMarkerLimitRewriteResult {
+    readonly text: string;
+    readonly emojiCount: number;
+}
 /** LLM 流转写所需的当前策略与素材 URL 解析器。 */
 export interface EmojiStreamRewriteOptions {
     readonly imageUrl: (emoji: EmojiCatalogEntry) => string;
+    readonly maxEmojis?: number;
 }
 /**
  * 只在 Markdown 普通文本中转写合法标签，并收敛模型直出的本插件图片；围栏代码与行内代码保持原样。
  * @param text - 模型完成的一个 text block。
  * @param imageUrl - 把 catalog 条目解析为当前 Host 的素材 URL。
- * @param initialDirective - 前序 text block 已经选定的指令，用于限制一次回复最多一张。
- * @returns 转写文本以及处理完整 block 后的指令状态。
+ * @param maxEmojis - 当前模式允许保留的单回合表情上限。
+ * @param initialEmojiCount - 前序 text block 已经保留的表情数量。
+ * @returns 转写文本以及处理完整 block 后的累计表情数量。
+ */
+export declare function rewriteEmojiMarkersWithLimit(text: string, imageUrl: (emoji: EmojiCatalogEntry) => string, maxEmojis?: number, initialEmojiCount?: number): EmojiMarkerLimitRewriteResult;
+/**
+ * 兼容 0.1/0.2 早期公开 API：第三参数仍表示前序是否已经使用一张，结果仍返回 directive。
+ * 新运行时的分档多图策略使用 rewriteEmojiMarkersWithLimit()。
  */
 export declare function rewriteEmojiMarkers(text: string, imageUrl: (emoji: EmojiCatalogEntry) => string, initialDirective?: MarkerDirective): EmojiMarkerRewriteResult;
 /** 从一次请求的 system prompt 中读取与该请求绑定的表情模式。 */

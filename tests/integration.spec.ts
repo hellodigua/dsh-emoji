@@ -189,6 +189,20 @@ describe('real Cordis service composition', () => {
     expect(await modelText(ctx)).toBe('模型漏掉了标签')
   })
 
+  it('智能模式保留三张，高频模式保留四张，并允许重复表情', async () => {
+    const { ctx, adapter } = await setup({ settings: true })
+    adapter.text = Array.from({ length: 5 }, (_, index) => `第${String(index + 1)}句 ::emoji:happy::`).join('\n')
+
+    expect((await modelText(ctx)).match(/!\[Happy\]\(/g)).toHaveLength(3)
+
+    const ns = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
+    await ctx.settings.update(ns, { mode: 'frequent' })
+    await vi.waitFor(async () => {
+      expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain('[dsh-emoji:mode=frequent]')
+    })
+    expect((await modelText(ctx)).match(/!\[Happy\]\(/g)).toHaveLength(4)
+  })
+
   it('选择用户表情包后，新请求使用带包版本的稳定 URL，历史资源路由保持可读', async () => {
     const { ctx, packs } = await setup({ settings: true })
     await packs.installArchive(await customPackArchive())

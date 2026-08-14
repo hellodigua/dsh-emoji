@@ -26,7 +26,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。
 5. Host watcher 更新内存设置，并触发 `system-prompt/change`。
 6. 动态 prompt provider 在每次 assembly 时读取最新设置，把启用模式写入 `[dsh-emoji:mode=<mode>]` 请求标记，并将 `customPrompt` 追加到内置策略后；LLM 流开始时固定该请求的 `activePack`。
-7. global `llm/stream` 包装器跨过运行时 scope filter，只处理带上述标记且没有辅助 `purpose` 的主请求；合法 `::emoji:<key>::` 在 text block 完成时确定性转成当前 Host 的素材 Markdown。若模型从历史消息模仿并直出本插件 Markdown 图片，标准文件名和 `_`→`-` 变体重新解析为 catalog key，再由当前包生成规范 URL；未知文件名删除且不占用后续合法 marker 的单张额度。
+7. global `llm/stream` 包装器跨过运行时 scope filter，只处理带上述标记且没有辅助 `purpose` 的主请求；合法 `::emoji:<key>::` 在 text block 完成时确定性转成当前 Host 的素材 Markdown，并跨 block 累计当前模式的数量。若模型从历史消息模仿并直出本插件 Markdown 图片，标准文件名和 `_`→`-` 变体重新解析为 catalog key，再由当前包生成规范 URL；未知文件名删除且不占用数量额度。
 8. 上传或移除包后 Host 递增内部 `packRevision`，沿用 `settings/document-updated` 事件让其他已打开的卡片重读目录；存在未保存草稿时先保留草稿，放弃后再读取 Host，迟到的 refresh 不能覆盖请求发出后新建的草稿。
 9. Client controller 把 Host 错误码、非法响应和本地连接失败收敛为有限错误状态；设置卡片通过完整的 `zh/en` locale 字典显示所有标题、模式、尺寸、说明、状态、按钮和错误。
 10. `displaySize` 草稿会即时重建当前标签页的 namespaced CSS；放弃恢复已保存值，保存后其他标签页通过现有文档失效事件重读。尺寸只影响 Client，不触发 system prompt 变化。
@@ -45,21 +45,21 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 - `packRevision` 由 Host 保留；普通 save/reset 不能伪造或把它清零。
 - Client bundle 只把 React 与 `react/jsx-runtime` 作为平台 external，避免打包第二份 React。
 - 输出包装器不依赖 `isAgentLoopRequest()` 的模块私有 `WeakSet` 身份，因为树外插件可能解析到另一份 `dsh-llm` 模块；它用稳定的 `purpose` 字段排除压缩和标题调用，再从请求已经装配的 system prompt 读取私有模式标记，设置并发变化不会改变正在生成的回答。
-- marker 必须精确命中包内 catalog 的稳定 ASCII `key`；任意文本不能直接组成文件路径或 URL。不可编辑协议明确禁止模型输出 Markdown 图片和素材 URL；转写器同时拦截普通文本中的本插件图片，合法标准文件名重新规范化、未知文件名删除。行内代码、围栏代码、转义、旧 `::中文名::`、未知 marker 和普通外部图片保持原文。
-- 用户可以用 `customPrompt` 定义表情偏好和跳过场景；模式标记、合法标签清单、一回合最多一张、只处理面向用户正文等协议规则由插件在自定义内容之后重新声明，不能通过设置页删除。
+- marker 必须精确命中包内 catalog 的稳定 ASCII `key`；任意文本不能直接组成文件路径或 URL。不可编辑协议明确禁止模型输出 Markdown 图片和素材 URL；转写器同时拦截普通文本中的本插件图片，合法标准文件名重新规范化、未知文件名删除。代码、链接与图片边界来自 CommonMark AST 节点位置，裸 HTTP(S) URL 另行保护；因此普通方括号和段落续行缩进仍属于可转写正文，而行内代码、围栏/缩进代码、Markdown 链接与图片、自动链接、裸 URL、转义、旧 `::中文名::`、未知 marker 和普通外部图片保持原文。
+- 用户可以用 `customPrompt` 定义表情偏好和跳过场景；模式标记、合法标签清单、智能 3 张/高频 4 张的程序上限、代码与链接边界、只处理面向用户正文等协议规则由插件在自定义内容之后重新声明，不能通过设置页删除。相同表情不去重。
 
 ## 当前语义
 
 - `off`：提示词为空，输出流不转写标签。
-- `auto`：适合的轻松友好语境可以在正文的恰当位置输出一个合法标签。
-- `frequent`：大多数适合的日常回答主动在恰当位置输出一个合法标签。
+- `auto`：适合的轻松友好语境在正文的恰当位置自然使用表情，程序最多保留 3 个合法标签。
+- `frequent`：大多数适合的日常回答在多个恰当位置主动使用表情，程序最多保留 4 个合法标签。
 - 内置频率策略、插入位置和协议约束使用英文 canonical 文案；`::emoji:<key>::` 模板只声明一次，40 项目录以 `key=English/中文` 提供双语语义。它们不随 UI locale 改变，也不进入持久化配置。
 - 附加提示词默认留空，可以使用任意语言；设置卡片明确说明留空时仍使用内置规则，并在空白状态提供“填入示例”按钮。示例按当前界面语言填入草稿，用户可以继续编辑，只有保存后才从下一次模型调用开始使用；恢复默认仍回到空字符串。
 - 设置卡片跟随 DSH 当前 `zh/en` locale；中英文键集合由 TypeScript 静态保证完整。DSH core 当前仍以中文作为缺失项 fallback，但本插件没有缺失键。
 - 插件不预设严肃、正式或高风险内容的跳过规则；用户可以在自定义提示词中自行定义。
-- 所有启用模式在程序层最多保留第一张合法表情；后续合法标签会被删除。
+- 相同 key 可以连续或分散出现，不做去重；超过当前模式上限的合法标签会被删除。
 
-`auto` 与 `frequent` 的触发频率、表情偏好和用户定义的跳过场景都依赖模型遵循 prompt。插件不会在模型没有选择合法标签时自动补图。多图和“隔几句话一张”暂不支持。
+`auto` 与 `frequent` 的触发频率、表情偏好、具体插入位置和用户定义的跳过场景都依赖模型遵循 prompt。插件不会在模型没有选择合法标签时自动补图。
 
 ## 用户自定义显示大小
 

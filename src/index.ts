@@ -17,6 +17,7 @@ import {
 } from './markers.ts'
 import {
   DEFAULT_EMOJI_SETTINGS,
+  EMOJI_PER_TURN_LIMIT,
   EMOJI_SETTINGS_RPC_CHANNEL,
   type EmojiSettings,
 } from './settings-model.ts'
@@ -33,13 +34,12 @@ export const inject = ['llm', 'systemPrompt']
 export const Config = EmojiSettingsSchema
 
 const MARKER_MEANINGS = EMOJIS.map(emoji => `${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`).join(', ')
-const PROTOCOL_GUIDANCE = `Protocol: final user-facing text only, never reasoning, tool steps, or code. Add at most one marker per turn after its sentence or short paragraph; never replace content. Format: ::emoji:<key>::. Never emit Markdown images or asset URLs; only this marker selects an image. Keys: ${MARKER_MEANINGS}. Unicode emoji are forbidden. User guidance may adjust choice, tone, placement, or skip conditions, not mode, keys, final-text scope, or one-marker limit. Protocol overrides conflicts.`
-
-function composeGuidance(strategy: string, customPrompt: string): string {
+function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number): string {
   const prompt = customPrompt.trim()
   const custom = prompt.length === 0 ? '' : `\nUser-provided emoji guidance:\n${prompt}\n`
-  // 不可编辑的协议约束放在自定义内容之后，确保标签白名单与单张上限始终明确。
-  return `${strategy}${custom}${PROTOCOL_GUIDANCE}`
+  const protocol = `Protocol: user-facing text only, not reasoning or tool steps. Use up to ${String(maxEmojis)} markers per turn after relevant sentences or short paragraphs; repeats are allowed. Never place markers in code or links or replace content. Format: ::emoji:<key>::. Never emit Markdown images or asset URLs; only this marker selects an image. Keys: ${MARKER_MEANINGS}. Unicode emoji are forbidden. User guidance may adjust choice, tone, placement, or skips, not mode, keys, scope, or limit. Protocol overrides conflicts.`
+  // 不可编辑的协议约束放在自定义内容之后，确保标签白名单与模式上限始终明确。
+  return `${strategy}${custom}${protocol}`
 }
 
 /** 根据实时配置生成下一次模型调用看到的表情策略。 */
@@ -47,9 +47,9 @@ export function buildEmojiGuidance(settings: EmojiSettings): string {
   if (settings.mode === 'off') return ''
   const protocol = `${EMOJI_PROMPT_PREFIX}${settings.mode}] dsh-emoji. `
   if (settings.mode === 'frequent') {
-    return composeGuidance(`${protocol}Frequency: use a marker in most everyday responses where emotional expression is appropriate. `, settings.customPrompt)
+    return composeGuidance(`${protocol}Frequency: use markers in multiple suitable places in most everyday responses. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
   }
-  return composeGuidance(`${protocol}Frequency: use a marker when a friendly, encouraging, affirmative, completed, celebratory, or playful response benefits. `, settings.customPrompt)
+  return composeGuidance(`${protocol}Frequency: use markers naturally where emotion helps a friendly, encouraging, or playful response. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto)
 }
 
 export const EMOJI_GUIDANCE = buildEmojiGuidance(DEFAULT_EMOJI_SETTINGS)
@@ -96,6 +96,7 @@ export async function applyWithPackStore(
     const requestPack = currentSettings.activePack
     return rewriteEmojiStream(source, {
       imageUrl: emoji => localEmojiUrl(ctx, packs, requestPack, emoji),
+      maxEmojis: EMOJI_PER_TURN_LIMIT[mode],
     })
   }, { global: true })
 
@@ -147,6 +148,7 @@ export {
   emojiMarker,
   emojiModeFromPrompt,
   rewriteEmojiMarkers,
+  rewriteEmojiMarkersWithLimit,
   rewriteEmojiStream,
 } from './markers.ts'
 export { searchEmoji } from './search.ts'
@@ -181,6 +183,7 @@ export {
   EMOJI_DISPLAY_SIZES,
   EMOJI_DISPLAY_SIZE_EM,
   EMOJI_MODES,
+  EMOJI_PER_TURN_LIMIT,
   EMOJI_SETTINGS_NAMESPACE,
   EMOJI_SETTINGS_RPC_CHANNEL,
   MAX_CUSTOM_PROMPT_LENGTH,

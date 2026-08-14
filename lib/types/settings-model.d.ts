@@ -3,6 +3,8 @@ import { type EmojiPackSummary } from './pack-model.ts';
 /** AI 使用表情的策略档位。 */
 export declare const EMOJI_MODES: readonly ["off", "auto", "frequent"];
 export type EmojiMode = (typeof EMOJI_MODES)[number];
+/** 各策略在程序层允许保留的单回合表情数量。 */
+export declare const EMOJI_PER_TURN_LIMIT: Readonly<Record<EmojiMode, number>>;
 /** 行内表情的有限显示尺寸；值是稳定协议，具体 em 映射由插件定义。 */
 export declare const EMOJI_DISPLAY_SIZES: readonly ["small", "normal", "large", "xlarge"];
 export type EmojiDisplaySize = (typeof EMOJI_DISPLAY_SIZES)[number];

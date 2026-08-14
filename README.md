@@ -2,9 +2,9 @@
 
 [English](README.en.md) | 简体中文
 
-![dsh-emoji 蓝鲸表情包](assets/readme/banner.png)
+为 DeepSeek Harness 的回复加入可切换、自定义的行内表情。
 
-`dsh-emoji` 是 DeepSeek Harness 的 Profile Bundle，让 Agent 在正文中输出受控 ASCII marker，再由 Host 确定性转成行内 Markdown 图片。`0.2.0` 支持上传遵循标准 40 个语义 key 的自定义表情包；当前只处理 Web Assistant 回复，不修改 DSH core。
+![dsh-emoji 蓝鲸表情包](assets/readme/banner.png)
 
 ## 效果预览
 
@@ -12,25 +12,19 @@
 
 ## 工作方式
 
-- system prompt 使用英文技术默认值，向模型提供 40 个不随 UI locale 改变的合法 marker，例如 `::emoji:happy::`、`::emoji:thinking::`、`::emoji:celebrate::`、`::emoji:sorry::`、`::emoji:applause::`，同时附带中英文语义说明。
-- Host 包装 Agent 的 LLM 流，在最终 text block 关闭时把合法标签确定性映射为素材 Markdown；该过程不产生 Function Call 或第二次模型请求。
-- Host 通过 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 提供带表情包版本的不可变图片；`0.1.x` 已写入历史消息的 `/deepseek/<file>.png` 地址继续兼容。
-- Web Client 只覆盖上述路由的 `<img>`，支持小、正常、偏大、大四档行内尺寸；默认“正常”为 `1.5em`。
-- 转写器只处理 Markdown 普通文本，跳过行内代码、围栏代码和未知标签，并在程序层限制一回合最多一张。若模型绕过 marker 自行输出本插件 Markdown 图片，合法标准文件名（包括 `_` 误写为 `-` 的变体）会重新解析为当前包的规范 URL，不存在的臆造文件名会被删除；普通外部图片不受影响。
+- AI 在回复中输出 `::emoji:happy::` 这类语义标记，插件会在 Host 端将其转换为当前表情包的行内图片，无需额外模型调用。
+- 内置和用户上传的表情包共用 40 个稳定语义 key，可随时切换，并支持小、正常、偏大、大四档尺寸。
+- 转写只作用于普通回复文本和插件图片，不影响代码、链接、未知标记或其他 Markdown 图片；相同表情可以重复使用。
 
 ## 调整 AI 的表情频率
 
-安装并重启 Web Host 后，打开「设置 → 插件 → 表情（Whale Emoji）」即可选择：
+安装并重启 Web Host 后，打开「设置 → 插件 → 表情（Whale Emoji）」：
 
-- `关闭`：移除表情标签协议，该请求的输出不进行标签转写。
-- `智能`：只在轻松、友好且适合表达情绪时使用，默认值。
-- `高频`：提示 AI 在大多数适合的日常回答中主动使用一张。
+- `关闭`：不使用表情。
+- `智能`：在适合表达情绪时自然使用，每回合最多 3 张，默认选项。
+- `高频`：在大多数日常回复的多个合适位置主动使用，每回合最多 4 张。
 
-设置卡片完整支持中文和英文，并跟随 DSH 当前界面语言。还可以在“附加提示词（可选）”文本框中调整表情的选择、语气、插入位置和需要跳过表情的场景；留空时继续使用内置规则，空白状态可一键填入本地化示例再继续编辑。插件不预设“严肃内容跳过”等业务规则，示例只有在用户主动填入并保存后才会生效。保存后无需重启，从下一次模型调用开始生效；配置持久化到 DSH Settings 文档，默认是 `~/.dsh/settings.yaml` 的 `dsh-emoji` 段。
-
-自定义提示词默认留空，最多 4000 字符；英文内置策略与 marker 协议不写入持久化配置。插件始终独立保留模式标记、合法 marker 清单、禁止模型自行拼接 Markdown 图片或素材 URL、只处理面向用户正文和一回合最多一张等协议约束，避免误删关键规则后导致转写失效。Host RPC 使用稳定错误码和英文 wire message，设置卡片再按 DSH 当前语言显示错误。
-
-`智能` 与 `高频` 是否选择标签仍取决于模型。插件不会在模型没有选择表情时自动补图；用户可通过自定义提示词定义需要跳过表情的场景。
+还可以选择表情包、调整显示尺寸，或填写“附加提示词”控制表情的选择、语气和使用场景。保存后从下一次回复生效，无需重启；是否实际使用表情仍由模型决定。
 
 ## 上传自己的表情包
 
@@ -77,20 +71,9 @@ sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 
 用户包保存在 `$DSH_HOME/emoji-packs/`（默认 `~/.dsh/emoji-packs/`），Settings 只保存当前 `id@version`。从选择列表“移除”不会物理删除素材字节，因此历史消息里的版本化 URL 仍能回放；重新上传完全相同的 ZIP 可以恢复该版本。
 
-## 重新切分鲸鱼表情
-
-切片脚本只接受当前登记的 `1254×1254`、`8×5` 蓝色正面鲸鱼完整版总览 PNG。每次运行会避开标题和编号文字、去除白色背景，并输出 40 张 `128×128 RGBA PNG`：
-
-```sh
-python3 scripts/slice-deepseek-sheet.py \
-  "/absolute/path/to/known-sheet.png" \
-  assets/emoji/deepseek \
-  --preview /tmp/dsh-emoji-deepseek-preview.png
-```
-
-脚本依赖 Pillow。输出 ID 与总览图中的编号严格一致，从 `ds_01` 连续到 `ds_40`；源图 SHA-256 与完整清单见 [ASSETS.md](ASSETS.md)。旧侧身蓝鲸系列已删除；Bilibili 同步脚本和本地素材暂作为迁移参考保留，但不进入运行时 catalog 或 npm 发布白名单。
-
 ## 本地开发
+
+需要 Node.js `^22.19.0 || >=24`、pnpm 11，以及可读取 `@deepseek-ai/*` 的 npm 凭据。
 
 ```sh
 corepack pnpm install
@@ -99,36 +82,3 @@ corepack pnpm test
 corepack pnpm build
 corepack pnpm pack --dry-run
 ```
-
-DSH 开发依赖由 pnpm 11 从 npm 安装，不再链接同级源码 checkout。发布用 peer 范围面向 DSH `^0.1.0-rc.2`，本地开发则用精确的 `0.1.0-rc.2` devDependencies 固定类型检查和测试基线；发布产物自身不携带 DSH runtime，运行时只读取包内 `assets/`。插件不保留 `0.0.1-rc.*` 双栈兼容层：设置卡片依赖 `dsh-client-ui-settings-plugins`，Host 使用 `webServer` 与 `SettingsProvider`。
-
-首次安装依赖时，npm 账号或 token 必须具备 `@deepseek-ai/*` 私有包的读取权限。如果本机 npm 配置通过 `NPM_TOKEN` 注入凭据，请先导出有效变量；未配置或凭据失效时，registry 可能用 404 隐藏私有包。
-
-## 使用 DSH 0.1.0-rc.2 安装
-
-先在本仓库构建，再用 npm 发布的 DSH 0.1.0-rc.2 CLI 安装；不要用全局 `dsh` 或源码快照代替该兼容性验证：
-
-```sh
-pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web add -w \
-  --ignore-scripts \
-  'file:/absolute/path/to/dsh-emoji'
-pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 web
-```
-
-安装后重启 Web Host，并用 `--dump-config`、Web boot manifest 和实际会话共同验证。卸载时使用包名：
-
-```sh
-pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web remove -w \
-  @dsh-external/dsh-emoji
-```
-
-## 已知限制
-
-- 用户输入正文仍是纯文本，本插件不提供用户侧行内表情选择器。
-- TUI 不显示 Web Client 样式。
-- 一轮最多一张表情；暂不支持“隔几句话一张”的多图策略。
-- 自定义提示词中的表情偏好和跳过场景依赖模型遵循，不提供程序兜底。
-- 模型流式生成 marker 时，原始 `::emoji:<key>::` 可能短暂显示，并在 text block 完成后替换为图片。
-- 回复中保存的是带当前 Host 端口的绝对 loopback URL；表情包版本可以稳定回放，但改变端口或远程访问时，旧消息图片仍会失效。
-- 表情链路本身不产生工具卡片；Agent 的其他普通工具调用仍按 DSH 默认方式展示。
-- 总览图及其二创素材的公开分发范围仍需由素材提供者确认，见 [ASSETS.md](ASSETS.md)。

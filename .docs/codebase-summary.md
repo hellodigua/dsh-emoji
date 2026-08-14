@@ -3,8 +3,8 @@
 ## 运行时主链路
 
 1. `src/index.ts` 根据实时 Settings 生成带 `[dsh-emoji:mode=…]` 的英文 canonical system prompt，将用户可编辑的 `customPrompt` 夹在频率策略与不可编辑协议约束之间；marker 模板只声明一次，catalog 以 `key=English/中文` 紧凑目录提供全部合法 key。
-2. Agent 在面向用户的自然语言正文中，根据用户提示自主决定是否使用表情，并选择表情与恰当位置，最多输出一个不随 UI locale 改变的 ASCII marker。
-3. `src/index.ts` 用 global 监听跨过运行时 scope filter，并以无辅助 `purpose` + 私有模式标记界定主请求；`src/markers.ts` 在 text block 结束时转写合法标签。模型直出的本插件 Markdown 图片不会原样持久化：标准文件名及下划线变体重新收敛到 catalog 和当前包 URL，未知文件名删除；代码围栏、行内代码、转义内容、未知 marker 和普通外部图片不改写。
+2. Agent 在面向用户的自然语言正文中，根据用户提示自主决定是否使用表情，并选择表情与恰当位置；智能模式最多保留 3 个 marker，高频模式最多保留 4 个，相同 key 可以重复。
+3. `src/index.ts` 用 global 监听跨过运行时 scope filter，并以无辅助 `purpose` + 私有模式标记界定主请求；`src/markers.ts` 在 text block 结束时转写合法标签并跨 block 累计数量。转写前用 `mdast-util-from-markdown` 取得 CommonMark AST 的真实代码、链接和图片节点边界，另行保护裸 HTTP(S) URL，避免把普通方括号或段落续行缩进误判为链接/代码。模型直出的本插件 Markdown 图片不会原样持久化：标准文件名及下划线变体重新收敛到 catalog 和当前包 URL，未知文件名删除；代码围栏、行内代码、Markdown 链接与图片、自动链接、裸 HTTP(S) URL、转义内容、未知 marker 和普通外部图片不改写。
 4. 转写请求开始时固定当前 `activePack`；结果引用当前 Host 的 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 绝对 loopback URL，缺失包 fail closed 回退内置 `deepseek@8`。
 5. `src/packs.ts` 索引内置包和 `$DSH_HOME/emoji-packs/` 用户包；`src/assets.ts` 通过 DSH 0.1.0-rc.2 的 `webServer` 服务注册路由并只提供索引白名单内的 PNG。v0.1 的两段式内置 URL 继续兼容。
 6. `src/client/index.ts` 依赖 `dsh-client-ui-settings-plugins` 提供的 `settings.plugin.item` 插槽，并只对 dsh-emoji 路由图片应用可配置的四档行内尺寸；默认 `normal` 为 `1.5em`，基线偏移随档位计算。
@@ -17,6 +17,19 @@
 - `package.json#files` 只发布 `assets/emoji/deepseek` 运行时素材，并随包发布 `EMOJI_KEYS.md` 语义契约；旧 Bilibili 素材不进入当前包。
 - 用户 ZIP 必须声明 `keySet: "dsh-emoji-core@1"` 并实现相同 40 key，不进入 npm 包或 Settings；通过临时目录完整校验后原子安装到 `$DSH_HOME/emoji-packs/<id>/<version>/`。这是插件自有的 feature root；当前 DSH 没有 `pluginDataDir` API，Profile 目录也不承担用户数据。`src/packs.ts` 使用官方 `@deepseek-ai/dsh-home-paths` 的 `resolveDshHome()`，不自行复制 Home 解析规则。`schemaVersion` 与 `keySet` 分别描述技术格式和语义集合。读取已安装的旧内部 manifest 时，缺失 `keySet` 兼容为 core@1，公开上传入口仍严格要求显式声明。移除只隐藏列表并保留版本素材供历史回放。
 
+### 重新生成内置鲸鱼素材
+
+切片脚本依赖 Pillow，只接受已登记 SHA-256 的 `1254×1254`、`8×5` 蓝色正面鲸鱼完整版总览 PNG：
+
+```sh
+python3 scripts/slice-deepseek-sheet.py \
+  "/absolute/path/to/known-sheet.png" \
+  assets/emoji/deepseek \
+  --preview /tmp/dsh-emoji-deepseek-preview.png
+```
+
+脚本会避开标题和编号、去除白色背景，并输出从 `ds_01` 到 `ds_40` 的 `128×128 RGBA PNG`。源图 SHA-256、素材来源和完整清单见 [ASSETS.md](../ASSETS.md)。
+
 ## 配置链路
 
 - `src/settings-model.ts` 定义 Host/Client 共用文档与 RPC 契约，包括关闭、智能、高频三档模式、默认留空的 `customPrompt`、默认 `deepseek@8` 的 `activePack` 和 Host 维护的包目录 `packRevision`；内置英文策略不进入持久化设置。
@@ -26,7 +39,7 @@
 
 ## 关键验证
 
-- `tests/markers.spec.ts`：标签、模型直出图片的规范化与拒绝、Markdown 边界、重复限制和无标签行为。
+- `tests/markers.spec.ts`：标签、模型直出图片的规范化与拒绝、CommonMark 代码/链接边界、普通方括号与缩进段落反例、分档数量上限、重复表情和无标签行为。
 - `tests/integration.spec.ts`：真实 Cordis、LLM 流、跨 scope/树外模块身份、辅助调用隔离、临时端口素材 URL与设置热更新。
 - `tests/catalog.spec.ts`、`tests/assets.spec.ts`：catalog/磁盘一致性和路由白名单。
 - `tests/client.spec.ts`、`tests/settings.spec.ts`：Web 样式、完整双语字典、错误码收敛与设置交互。

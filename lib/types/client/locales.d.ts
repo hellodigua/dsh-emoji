@@ -15,9 +15,9 @@ export declare const en: {
     readonly 'mode.off.title': "Off";
     readonly 'mode.off.description': "Do not provide the marker protocol to the AI or rewrite markers.";
     readonly 'mode.auto.title': "Smart";
-    readonly 'mode.auto.description': "Use an emoji only when a friendly response benefits from emotional expression.";
+    readonly 'mode.auto.description': "Use emoji naturally when a friendly response benefits, up to three per turn.";
     readonly 'mode.frequent.title': "Frequent";
-    readonly 'mode.frequent.description': "Actively use one emoji in most suitable everyday responses.";
+    readonly 'mode.frequent.description': "Use emoji in multiple suitable places, up to four per turn.";
     readonly 'pack.label': "Emoji pack";
     readonly 'pack.builtin': "Built in";
     readonly 'pack.builtinSuffix': " (Built in)";
@@ -42,7 +42,7 @@ export declare const en: {
     readonly 'prompt.placeholder': "Add your own emoji preferences, or use the example above as a starting point.";
     readonly 'prompt.example': "Choose the most fitting emoji from context and place it after the most relevant sentence or short paragraph. Do not use emoji for serious, formal, or high-risk content.";
     readonly 'prompt.help': "Leave this empty to use the built-in rules. Additional guidance can control emoji choice, tone, placement, and skip conditions.";
-    readonly 'limit.note': "The current version inserts at most one emoji per turn.";
+    readonly 'limit.note': "Smart keeps up to 3 emoji per turn; Frequent keeps up to 4. Repeated emoji are allowed.";
     readonly 'status.saved': "Settings saved. They take effect on the next model call.";
     readonly 'status.packUploaded': "Emoji pack uploaded. Select it and save to use it for new responses.";
     readonly 'status.packRemoved': "Emoji pack removed from the selector. Historical message assets were retained.";

@@ -2,9 +2,9 @@
 
 English | [简体中文](README.md)
 
-![dsh-emoji whale emoji pack](assets/readme/banner.en.png)
+Add switchable, customizable inline emoji to DeepSeek Harness responses.
 
-`dsh-emoji` is a DeepSeek Harness Profile Bundle that lets the Agent emit controlled ASCII markers and deterministically converts them into tiny inline Markdown images on the Host. Version `0.2.0` adds user-uploaded packs that implement the same 40 stable semantic keys. It currently handles Web Assistant responses only and requires no changes to DSH core.
+![dsh-emoji whale emoji pack](assets/readme/banner.en.png)
 
 ## Preview
 
@@ -12,25 +12,19 @@ English | [简体中文](README.md)
 
 ## How it works
 
-- The system prompt uses canonical English technical instructions and gives the model 40 locale-independent markers, such as `::emoji:happy::`, `::emoji:thinking::`, `::emoji:celebrate::`, `::emoji:sorry::`, and `::emoji:applause::`, with English and Chinese semantic glosses.
-- The Host wraps the Agent's LLM stream and deterministically replaces valid markers with emoji Markdown when the final text block closes. This does not create a Function Call or a second model request.
-- The Host serves immutable, versioned images from `/api/dsh-emoji/assets/<pack-id>/<version>/<file>`. Historical `/deepseek/<file>.png` URLs written by `0.1.x` remain supported.
-- The Web Client styles only images under that route and offers Small, Normal, Large, and Extra large inline sizes; the default is Normal at `1.5em`.
-- The rewriter processes ordinary Markdown text only, skips inline code, fenced code, and unknown markers, and enforces a maximum of one emoji per turn in code. If the model bypasses the marker and emits a plugin Markdown image directly, a valid standard filename (including an `_` typo for `-`) is resolved back to the current pack's canonical URL, while an invented filename is removed. Ordinary external images are unaffected.
+- The AI emits semantic markers such as `::emoji:happy::`, which the Host converts into inline images from the active emoji pack without another model call.
+- Built-in and uploaded packs share 40 stable semantic keys, can be switched at any time, and support four display sizes.
+- Rewriting applies only to normal reply text and plugin images. Code, links, unknown markers, and other Markdown images are left unchanged, and repeated emoji are allowed.
 
 ## Adjusting emoji frequency
 
-After installation and a Web Host restart, open **Settings → Plugins → Whale Emoji** and choose a mode:
+After installation and a Web Host restart, open **Settings → Plugins → Whale Emoji**:
 
-- **Off**: removes the emoji marker protocol and disables marker rewriting for the request.
-- **Smart**: uses an emoji only when the response is light, friendly, and benefits from emotional expression. This is the default.
-- **Frequent**: encourages the AI to use one emoji in most suitable everyday responses.
+- **Off**: do not use emoji.
+- **Smart**: use emoji naturally when it helps express emotion, up to 3 per turn. This is the default.
+- **Frequent**: actively use emoji in multiple suitable places, up to 4 per turn.
 
-The settings card is fully available in English and Chinese and follows the active DSH interface language. You can also use the **Additional prompt (optional)** field to tune emoji selection, tone, placement, and situations where emoji should be skipped. Leaving it empty keeps the built-in rules; an empty field offers a localized example that you can insert with one click and edit before saving. The example has no effect unless you explicitly insert and save it. Changes take effect on the next model call without a restart. The configuration is stored under the `dsh-emoji` section of the DSH Settings document, which defaults to `~/.dsh/settings.yaml`.
-
-The custom prompt is empty by default and accepts up to 4,000 characters. The canonical English strategy and marker protocol are not persisted as user settings. The plugin always retains the mode marker, valid marker catalog, prohibition on model-authored Markdown images or asset URLs, user-facing-text boundary, and one-emoji-per-turn rule so that removing critical protocol text cannot accidentally disable rewriting. Host RPC uses stable error codes and canonical English wire messages; the card localizes those errors for the active DSH language.
-
-Marker selection in **Smart** and **Frequent** modes still depends on the model. The plugin does not append an image when the model chooses no marker; use the custom prompt to define situations where emoji should be skipped.
+You can also choose an emoji pack, adjust its display size, or use **Additional prompt** to control emoji selection, tone, and usage. Changes apply to the next reply without a restart. The model still decides whether to use an emoji.
 
 ## Uploading your own emoji pack
 
@@ -77,20 +71,9 @@ Each key must have exactly one matching `.png`. IDs use lowercase letters, digit
 
 User packs live under `$DSH_HOME/emoji-packs/` (default `~/.dsh/emoji-packs/`), while Settings stores only the active `id@version`. **Remove** hides a pack from the selector but intentionally retains its immutable bytes for historical messages. Uploading the exact same ZIP restores that version.
 
-## Re-slicing the whale emoji
-
-The slicing script accepts only the registered `1254×1254`, `8×5` complete front-facing blue whale sheet. Each run avoids the title and numeric labels, removes the white background, and emits 40 `128×128 RGBA PNG` files:
-
-```sh
-python3 scripts/slice-deepseek-sheet.py \
-  "/absolute/path/to/known-sheet.png" \
-  assets/emoji/deepseek \
-  --preview /tmp/dsh-emoji-deepseek-preview.png
-```
-
-The script requires Pillow. Output IDs match the numbers in the sheet exactly, from `ds_01` through `ds_40`. See [ASSETS.md](ASSETS.md) for the source-image SHA-256 and the complete catalog. The former side-facing whale series has been removed. The Bilibili sync script and local assets remain only as migration references and are excluded from the runtime catalog and npm publishing allowlist.
-
 ## Local development
+
+Requires Node.js `^22.19.0 || >=24`, pnpm 11, and npm credentials with access to `@deepseek-ai/*`.
 
 ```sh
 corepack pnpm install
@@ -99,36 +82,3 @@ corepack pnpm test
 corepack pnpm build
 corepack pnpm pack --dry-run
 ```
-
-pnpm 11 installs DSH development packages from npm instead of linking a sibling source checkout. Published peer ranges target DSH `^0.1.0-rc.2`, while exact `0.1.0-rc.2` devDependencies pin the local typecheck and test baseline. The published artifact does not bundle the DSH runtime, and runtime code reads packaged files under `assets/` only. The plugin intentionally carries no compatibility stack for `0.0.1-rc.*`: the settings card depends on `dsh-client-ui-settings-plugins`, while the Host uses `webServer` and `SettingsProvider`.
-
-The initial dependency install requires an npm account or token with read access to the private `@deepseek-ai/*` packages. If your local npm configuration injects credentials through `NPM_TOKEN`, export a valid value first; when credentials are missing or invalid, the registry may mask private packages as 404 responses.
-
-## Installing with DSH 0.1.0-rc.2
-
-Build this repository first, then install it with the npm-published DSH 0.1.0-rc.2 CLI. Do not substitute a global `dsh` or a source snapshot for this compatibility check:
-
-```sh
-pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web add -w \
-  --ignore-scripts \
-  'file:/absolute/path/to/dsh-emoji'
-pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 web
-```
-
-Restart the Web Host after installation, then verify the bundle through `--dump-config`, the Web boot manifest, and a real conversation. Remove it by package name:
-
-```sh
-pnpm dlx @deepseek-ai/dsh@0.1.0-rc.2 plugin --profile web remove -w \
-  @dsh-external/dsh-emoji
-```
-
-## Known limitations
-
-- User-authored message bodies remain plain text; this plugin does not provide an emoji picker for user input.
-- The TUI does not apply Web Client styles.
-- A turn can contain at most one emoji; multi-image strategies such as “one every few sentences” are not supported yet.
-- Emoji preferences and skip conditions in the custom prompt rely on model compliance and have no programmatic fallback.
-- While a marker is streaming, its raw `::emoji:<key>::` text may appear briefly before it is replaced when the text block closes.
-- Responses store an absolute loopback URL containing the current Host port. Pack versions remain stable, but historical images still break if the port changes or the conversation is opened remotely.
-- The emoji path itself creates no tool card. Other ordinary Agent tool calls still use the default DSH presentation.
-- Public redistribution rights for the source sheet and its derivative assets still require confirmation from the asset provider; see [ASSETS.md](ASSETS.md).
