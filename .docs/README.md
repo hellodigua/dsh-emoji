@@ -67,6 +67,6 @@
 - 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 104 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界、Unicode emoji 保留、相邻 marker 与易误判反例。
 - 精确 `@deepseek-ai/dsh@0.1.0-rc.6` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- `auto` guidance 为 1,387 字符，`frequent` 为 1,378 字符；system prompt 只声明一次 `::<key>::` 模板，明确零张合法、一张通常足够、多张需要正文分隔，并要求情绪或装饰性反应使用 marker、禁止模型直接输出 Markdown 图片或素材 URL。作为字面正文内容的 Unicode emoji 不属于插件协议，保持原文；40 个 `key=English/中文` 映射保持完整。
+- `auto` guidance 为 1,353 字符，`frequent` 为 1,334 字符；system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，内置文本不出现 `emoji` 单词，也不向模型暴露插件包名。提示只声明一次 `::<key>::` 模板，明确零张合法、一张通常足够、多张需要正文分隔，并将 marker 声明为唯一的非语言反应格式、禁止模型直接输出 Markdown 图片或素材 URL；作为字面正文内容的 Unicode 图形字符仍由转写器保持原文，40 个 `key=English/中文` 映射保持完整。模型是否遵循格式仍属于概率行为。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
 - 公共包名为 `dsh-emoji`；`npm run release:check` 是 CI 与本地演练入口，`npm run release` 是维护者唯一正式发布入口。

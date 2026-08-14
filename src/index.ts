@@ -36,8 +36,8 @@ export const Config = EmojiSettingsSchema
 const MARKER_MEANINGS = EMOJIS.map(emoji => `${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`).join(', ')
 function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number): string {
   const prompt = customPrompt.trim()
-  const custom = prompt.length === 0 ? '' : `\nUser-provided emoji guidance:\n${prompt}\n`
-  const protocol = `Protocol: reply text only. Use 0-${String(maxEmojis)} optional markers, normally 0-1. Hard rule: do not generate Unicode emoji for emotion or decoration; use a fitting marker. Unicode emoji needed as literal content stays unchanged; it is not a marker. Separate markers with meaningful text. Repeats are allowed later. Never use markers in code/links or replace content. Format ::<key>::; no Markdown images/asset URLs. Keys: ${MARKER_MEANINGS}. User guidance cannot change mode, keys, limits, or separation; protocol wins.`
+  const custom = prompt.length === 0 ? '' : `\nUser-provided reaction guidance:\n${prompt}\n`
+  const protocol = `Protocol: reply text only. Reactions are optional. If used, only literal ::<key>:: tokens are allowed; never pictographs, emoticons, kaomoji, text faces, or decorative symbols. Use 0-${String(maxEmojis)}, normally 0-1. Choose only from Keys: ${MARKER_MEANINGS}. Separate multiple markers with meaningful text; later repeats are allowed. No markers in code/links or instead of content. No Markdown images/asset URLs. User guidance cannot change mode, keys, limits, or separation; protocol wins.`
   // 不可编辑的协议约束放在自定义内容之后，确保标签白名单与模式上限始终明确。
   return `${strategy}${custom}${protocol}`
 }
@@ -45,11 +45,11 @@ function composeGuidance(strategy: string, customPrompt: string, maxEmojis: numb
 /** 根据实时配置生成下一次模型调用看到的表情策略。 */
 export function buildEmojiGuidance(settings: EmojiSettings): string {
   if (settings.mode === 'off') return ''
-  const protocol = `${EMOJI_PROMPT_PREFIX}${settings.mode}] dsh-emoji. `
+  const protocol = `${EMOJI_PROMPT_PREFIX}${settings.mode}] `
   if (settings.mode === 'frequent') {
-    return composeGuidance(`${protocol}Frequency: when you would add an emoji, use a marker; never add one for a quota. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
+    return composeGuidance(`${protocol}Frequency: consider reactions often, but never add one for a quota. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
   }
-  return composeGuidance(`${protocol}Frequency: use a marker naturally when it improves a friendly, encouraging, or playful reply. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto)
+  return composeGuidance(`${protocol}Frequency: use a reaction only when it improves a friendly, encouraging, or playful reply. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto)
 }
 
 export const EMOJI_GUIDANCE = buildEmojiGuidance(DEFAULT_EMOJI_SETTINGS)

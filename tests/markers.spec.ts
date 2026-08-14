@@ -200,9 +200,10 @@ describe('emoji marker rewrite', () => {
   })
 
   it('只识别绑定在 system prompt 中的启用模式', () => {
-    expect(emojiModeFromPrompt('前缀 [dsh-emoji:mode=frequent] 后缀')).toBe('frequent')
-    expect(emojiModeFromPrompt('[dsh-emoji:mode=always]')).toBeUndefined()
-    expect(emojiModeFromPrompt('[dsh-emoji:mode=off]')).toBeUndefined()
+    expect(emojiModeFromPrompt('前缀 [dsh-inline-reaction:mode=frequent] 后缀')).toBe('frequent')
+    expect(emojiModeFromPrompt('[dsh-inline-reaction:mode=always]')).toBeUndefined()
+    expect(emojiModeFromPrompt('[dsh-inline-reaction:mode=off]')).toBeUndefined()
+    expect(emojiModeFromPrompt('[dsh-emoji:mode=frequent]')).toBeUndefined()
     expect(emojiModeFromPrompt(undefined)).toBeUndefined()
   })
 })

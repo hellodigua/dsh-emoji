@@ -2,7 +2,7 @@
 
 ## 运行时主链路
 
-1. `src/index.ts` 根据实时 Settings 生成带 `[dsh-emoji:mode=…]` 的英文 canonical system prompt，将用户可编辑的 `customPrompt` 夹在频率策略与不可编辑协议约束之间；`::<key>::` marker 模板只声明一次，catalog 以 `key=English/中文` 紧凑目录提供全部合法 key。
+1. `src/index.ts` 根据实时 Settings 生成带 `[dsh-inline-reaction:mode=…]` 的英文 canonical system prompt，将用户可编辑的 `customPrompt` 夹在频率策略与不可编辑协议约束之间；内置提示统一使用 reaction/marker 术语且不出现 `emoji` 单词，`::<key>::` marker 模板只声明一次，catalog 以 `key=English/中文` 紧凑目录提供全部合法 key。
 2. Agent 在面向用户的自然语言正文中，根据用户提示自主决定是否使用表情；想加入情绪或装饰性反应时必须选择合法 marker，而不是用 Unicode emoji 替代。零张始终合法且一张通常足够，智能模式最多保留 3 个 marker，高频模式最多保留 4 个，相同 key 可以在正文不同位置重复；作为字面正文内容的 Unicode emoji 仍可保留。
 3. `src/index.ts` 用 global 监听跨过运行时 scope filter，并以无辅助 `purpose` + 私有模式标记界定主请求；`src/markers.ts` 在 text block 结束时转写合法标签并跨 block 累计数量及间隔状态。转写前用 `mdast-util-from-markdown` 取得 CommonMark AST 的真实代码、链接和图片节点边界，另行保护裸 HTTP(S) URL，避免把普通方括号或段落续行缩进误判为链接/代码。相邻 marker／插件图片只保留第一张，多个表情必须由字母、汉字或数字等有效正文分隔；普通 Unicode emoji 保持原文。模型直出的本插件 Markdown 图片不会原样持久化：标准文件名及下划线变体重新收敛到 catalog 和当前包 URL，未知文件名删除；代码围栏、行内代码、Markdown 链接与图片、自动链接、裸 HTTP(S) URL、转义内容、未知 marker 和普通外部图片不改写。
 4. 转写请求开始时固定当前 `activePack`；结果引用当前 Host 的 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 绝对 loopback URL，缺失包 fail closed 回退内置 `deepseek@8`。

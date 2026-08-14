@@ -25,7 +25,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 3. Client 通过 `/dsh-emoji-settings` 自有 Connection RPC 执行 `get`、`save`、`reset`、`pack-upload`、`pack-remove`；包操作细节见 [`user-emoji-packs.md`](user-emoji-packs.md)。
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。
 5. Host watcher 更新内存设置，并触发 `system-prompt/change`。
-6. 动态 prompt provider 在每次 assembly 时读取最新设置，把启用模式写入 `[dsh-emoji:mode=<mode>]` 请求标记，并将 `customPrompt` 追加到内置策略后；LLM 流开始时固定该请求的 `activePack`。
+6. 动态 prompt provider 在每次 assembly 时读取最新设置，把启用模式写入 `[dsh-inline-reaction:mode=<mode>]` 请求标记，并将 `customPrompt` 追加到内置策略后；LLM 流开始时固定该请求的 `activePack`。内置提示不暴露插件包名，也不使用 `emoji` 单词，以减少 reaction marker 与普通 Unicode 图形字符之间的词汇歧义；这项提示约束本身不保证模型服从。
 7. global `llm/stream` 包装器跨过运行时 scope filter，只处理带上述标记且没有辅助 `purpose` 的主请求；合法 `::<key>::` 在 text block 完成时确定性转成当前 Host 的素材 Markdown，并跨 block 累计当前模式的数量。若模型从历史消息模仿并直出本插件 Markdown 图片，标准文件名和 `_`→`-` 变体重新解析为 catalog key，再由当前包生成规范 URL；未知文件名删除且不占用数量额度。
 8. 上传或移除包后 Host 递增内部 `packRevision`，沿用 `settings/document-updated` 事件让其他已打开的卡片重读目录；存在未保存草稿时先保留草稿，放弃后再读取 Host，迟到的 refresh 不能覆盖请求发出后新建的草稿。
 9. Client controller 把 Host 错误码、非法响应和本地连接失败收敛为有限错误状态；设置卡片通过完整的 `zh/en` locale 字典显示所有标题、模式、尺寸、说明、状态、按钮和错误。

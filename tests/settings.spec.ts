@@ -59,19 +59,18 @@ describe('dynamic emoji guidance', () => {
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'off' })).toBe('')
     expect(DEFAULT_CUSTOM_PROMPT).toBe('')
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'auto' })).toContain('friendly, encouraging')
-    expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' })).toContain('when you would add an emoji, use a marker')
+    expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' })).toContain('consider reactions often, but never add one for a quota')
     for (const [mode, limit] of [['auto', 3], ['frequent', 4]] as const) {
       const guidance = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode })
-      expect(guidance).toContain(`Use 0-${String(limit)} optional markers, normally 0-1`)
-      expect(guidance).toContain('Separate markers with meaningful text')
-      expect(guidance).toContain('Never use markers in code/links')
-      expect(guidance).not.toContain('User-provided emoji guidance')
-      expect(guidance).toContain('Format ::<key>::')
-      expect(guidance).toContain('no Markdown images/asset URLs')
-      expect(guidance).toContain('do not generate Unicode emoji for emotion or decoration')
-      expect(guidance).toContain('use a fitting marker')
-      expect(guidance).toContain('Unicode emoji needed as literal content stays unchanged')
-      expect(guidance).toContain('it is not a marker')
+      expect(guidance).toContain('Reactions are optional')
+      expect(guidance).toContain('only literal ::<key>:: tokens are allowed')
+      expect(guidance).toContain(`Use 0-${String(limit)}, normally 0-1`)
+      expect(guidance).toContain('Separate multiple markers with meaningful text')
+      expect(guidance).toContain('No markers in code/links')
+      expect(guidance).not.toContain('User-provided reaction guidance')
+      expect(guidance).toContain('No Markdown images/asset URLs')
+      expect(guidance).toContain('never pictographs, emoticons, kaomoji, text faces, or decorative symbols')
+      expect(guidance.toLowerCase()).not.toContain('emoji')
       for (const emoji of EMOJIS) {
         expect(guidance).toContain(`${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`)
       }
@@ -79,7 +78,7 @@ describe('dynamic emoji guidance', () => {
       expect(guidance).not.toContain('::emoji:')
       expect(guidance.length).toBeLessThan(1400)
       expect(guidance).not.toContain('::开心::')
-      expect(guidance).toContain(`[dsh-emoji:mode=${mode}]`)
+      expect(guidance).toContain(`[dsh-inline-reaction:mode=${mode}]`)
     }
   })
 
@@ -88,13 +87,13 @@ describe('dynamic emoji guidance', () => {
       ...DEFAULT_EMOJI_SETTINGS,
       customPrompt: '优先选择轻松克制的表情，并放在转折句后。',
     })
-    expect(customized).toContain('User-provided emoji guidance:\n优先选择轻松克制的表情，并放在转折句后。')
-    expect(customized.indexOf('User-provided emoji guidance')).toBeLessThan(customized.indexOf('Protocol:'))
+    expect(customized).toContain('User-provided reaction guidance:\n优先选择轻松克制的表情，并放在转折句后。')
+    expect(customized.indexOf('User-provided reaction guidance')).toBeLessThan(customized.indexOf('Protocol:'))
     expect(customized).toContain('protocol wins')
 
     const empty = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, customPrompt: '   ' })
-    expect(empty).not.toContain('User-provided emoji guidance')
-    expect(empty).toContain('Use 0-3 optional markers')
+    expect(empty).not.toContain('User-provided reaction guidance')
+    expect(empty).toContain('Use 0-3, normally 0-1')
     expect(empty).toContain('Keys:')
   })
 })

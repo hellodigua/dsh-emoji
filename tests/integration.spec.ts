@@ -158,7 +158,7 @@ describe('real Cordis service composition', () => {
     ))
 
     await fiber.dispose()
-    expect(renderPrompt(await context.systemPrompt.assemble())).not.toContain('dsh-emoji:mode=')
+    expect(renderPrompt(await context.systemPrompt.assemble())).not.toContain('dsh-inline-reaction:mode=')
     expect(await modelText(context)).toBe('你好 ::happy::')
     expect((await fetch(`http://127.0.0.1:${String(context.webServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png`)).status).toBe(404)
   })
@@ -170,7 +170,7 @@ describe('real Cordis service composition', () => {
 
     await ctx.settings.update(ns, { mode: 'off' })
     await vi.waitFor(async () => {
-      expect(renderPrompt(await ctx.systemPrompt.assemble())).not.toContain('dsh-emoji:mode=')
+      expect(renderPrompt(await ctx.systemPrompt.assemble())).not.toContain('dsh-inline-reaction:mode=')
     })
     expect(await modelText(ctx)).toBe('你好 ::happy::')
 
@@ -180,7 +180,7 @@ describe('real Cordis service composition', () => {
     })
     await vi.waitFor(async () => {
       const prompt = renderPrompt(await ctx.systemPrompt.assemble())
-      expect(prompt).toContain('[dsh-emoji:mode=frequent]')
+      expect(prompt).toContain('[dsh-inline-reaction:mode=frequent]')
       expect(prompt).toContain('严肃内容跳过表情，其余优先把表情放在最相关的转折句后。')
     })
     expect(await modelText(ctx)).toContain('![Happy](')
@@ -198,7 +198,7 @@ describe('real Cordis service composition', () => {
     const ns = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
     await ctx.settings.update(ns, { mode: 'frequent' })
     await vi.waitFor(async () => {
-      expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain('[dsh-emoji:mode=frequent]')
+      expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain('[dsh-inline-reaction:mode=frequent]')
     })
     expect((await modelText(ctx)).match(/!\[Happy\]\(/g)).toHaveLength(4)
   })

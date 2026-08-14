@@ -4,7 +4,7 @@ import { EMOJIS, type EmojiCatalogEntry } from './catalog.ts'
 import type { EmojiMode } from './settings-model.ts'
 
 /** System prompt 内用于把一次请求绑定到确定频率策略的稳定前缀。 */
-export const EMOJI_PROMPT_PREFIX = '[dsh-emoji:mode='
+export const EMOJI_PROMPT_PREFIX = '[dsh-inline-reaction:mode='
 
 /** 生成不随 UI locale 改变、可持久化到历史消息的稳定 ASCII 标签。 */
 export function emojiMarker(emoji: EmojiCatalogEntry): string {
@@ -308,7 +308,7 @@ export function rewriteEmojiMarkers(
 /** 从一次请求的 system prompt 中读取与该请求绑定的表情模式。 */
 export function emojiModeFromPrompt(system: string | undefined): EmojiMode | undefined {
   if (system === undefined) return undefined
-  const match = /\[dsh-emoji:mode=(auto|frequent)\]/.exec(system)
+  const match = /\[dsh-inline-reaction:mode=(auto|frequent)\]/.exec(system)
   return match?.[1] as EmojiMode | undefined
 }
 
