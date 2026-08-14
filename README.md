@@ -71,9 +71,13 @@ sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 
 用户包保存在 `$DSH_HOME/emoji-packs/`（默认 `~/.dsh/emoji-packs/`），Settings 只保存当前 `id@version`。从选择列表“移除”不会物理删除素材字节，因此历史消息里的版本化 URL 仍能回放；重新上传完全相同的 ZIP 可以恢复该版本。
 
+## 兼容性
+
+当前版本面向 npm `@deepseek-ai/dsh@0.1.0-rc.6`，DSH peers 声明为 `^0.1.0-rc.6`。本地开发固定精确 rc.6 类型链，部署时由 Web Profile 提供共享运行时。
+
 ## 本地开发
 
-需要 Node.js `^22.19.0 || >=24`、pnpm 11，以及可读取 `@deepseek-ai/*` 的 npm 凭据。
+需要 Node.js `^22.19.0 || >=24` 和 pnpm 11。
 
 ```sh
 corepack pnpm install

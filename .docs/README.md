@@ -7,7 +7,7 @@
 - 语言：TypeScript、ESM、Node.js `^22.19.0 || >=24`；切片脚本使用 Python 与 Pillow。
 - 框架/库：Cordis、React、DSH llm/system-prompt/settings/connection/host-webserver、mdast CommonMark 解析器。
 - 构建与依赖管理：pnpm 11、TypeScript、tsdown
-- 测试：Vitest、JSDOM、npm 发布的 DSH 0.1.0-rc.2 集成验证
+- 测试：Vitest、JSDOM、npm 发布的 DSH 0.1.0-rc.6 集成验证
 
 # 关键功能
 
@@ -23,7 +23,7 @@
 - 智能模式在程序层最多保留 3 张表情，高频模式最多保留 4 张；相同 key 可以重复，代码和链接区域不转写。
 - 切片脚本按 SHA-256 识别当前 `8×5` 正面鲸鱼完整版总览图，共维护 40 张 `128×128 RGBA PNG`。
 - Profile Bundle 同时装配 Host half 与 Web Client half。
-- 当前插件只面向 DSH `^0.1.0-rc.2`：Web 配置卡片接入 `dsh-client-ui-settings-plugins`，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`；不保留 `0.0.1-rc.*` 兼容层。
+- 当前插件只面向 DSH `^0.1.0-rc.6`：Web 配置卡片接入 `dsh-client-ui-settings-plugins`，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`；不保留 `0.0.1-rc.*` 兼容层。
 
 # 目录结构
 
@@ -39,7 +39,7 @@
 - `src/client/EmojiSettingsCard.tsx`：插件配置卡片。
 - `src/client/settings-controller.ts`：设置页状态、revision 与网络竞态控制。
 - `scripts/slice-deepseek-sheet.py`、`assets/emoji/deepseek/`：确定性切片工具与运行时素材。
-- `src/catalog.generated.ts`、`assets/emoji/bilibili/`：不进入运行时和发布包的旧素材迁移参考。
+- `src/catalog.generated.ts`、`assets/emoji/bilibili/`：不进入运行时和发布包的素材生成参考。
 - `tests/`：catalog、检索、标签流、路由、Client 生命周期、设置和包结构验证。
 
 # 边界
@@ -61,14 +61,10 @@
 
 # 当前验证状态
 
-- DSH peers 已迁到 `^0.1.0-rc.2`，Cordis 与 Schemastery 分别迁到 `^4.0.1`、`^3.18.1`；本地开发用对应精确 devDependencies 固定类型检查和测试基线，部署仍由 Profile 提供共享 runtime。lockfile 已由真实 `0.1.0-rc.2` 包图重建，未再包含旧 rc.5 依赖。
-- 在这份真实 npm 类型与运行时包图上，typecheck、9 个测试文件共 96 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界与易误判反例。
-- 适配后的 `0.2.0` tarball 已安装到隔离 `DSH_HOME=/private/tmp/dsh-emoji-010rc2-runtime.7HzMUO`，并由固定的 npm `@deepseek-ai/dsh@0.1.0-rc.2` 在 `127.0.0.1:41939` 冷启动。浏览器确认“表情”卡片完整挂载，40 张包预览与 1 张尺寸预览全部成功加载，默认智能策略和正常尺寸正确，控制台无 warning/error；测试 Host 已停止，活动 3080 和用户 Profile 未修改。
-- 隔离 Profile 的 pnpm 仍会从自身视角报告插件 peers 缺失；新版 CLI 使用共享模块 fallback 让插件与 Host 共用同一 Cordis 实例。只有冷启动、Client 挂载和素材路由同时成功时，才能把该 warning 判为预期安装噪音。
+- DSH peers 使用 `^0.1.0-rc.6`；本地开发用精确 rc.6 devDependencies 固定类型检查和测试基线，部署由 Profile 提供共享 runtime。`dsh-api-gateway`、`dsh-invariants` 与 `dsh-typert-registry` 固定为同一 rc.6 类型身份。
+- 在真实 rc.6 npm 类型与运行时包图上，typecheck、9 个测试文件共 96 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界与易误判反例。
+- 精确 `@deepseek-ai/dsh@0.1.0-rc.6` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- 旧 DSH `0.0.1-rc.2` checkout 的历史结果只用于对照，不属于当前支持范围，也不能替代上述 npm `0.1.0-rc.2` 验证。
-- 默认 `auto` guidance 从 2,219 字符降至 1,382 字符，减少约 37.7%；`frequent` 为 1,366 字符。测试逐项确认 40 个 `key=English/中文` 映射均保留，完整 `::emoji:` 模板只出现一次，并明确禁止模型自行输出 Markdown 图片或素材 URL。
-- 本机活动 `web` Profile 尚未安装本次智能 3 张/高频 4 张的多图改动。此前验证的 `0.2.0` Client bundle SHA-256 为 `79313b784f88b8144e7b3bcb59df2dc6dba2de0cfa192e65967564156f2efbbc`；当时正式 checkout 的 Host PID `79040` 监听 `127.0.0.1:3080`，真实浏览器确认表情卡片与内置卡片都使用同一个 SVG chevron，展开后旋转 180 度，边框和背景计算值一致，内置包只显示“大肥鱼(内置)”而不显示 `deepseek@8`，控制台无 warning/error。
-- 蓝色正面鲸鱼完整版使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致；新版隔离浏览器已确认全部 40 张预览在线加载，完整 catalog 和路由拒绝边界继续由自动化测试覆盖。
-- 旧 Bilibili 版本曾验证严肃内容跳过和端口边界；本次鲸鱼包仍需复跑这些扩展场景。
-- 仓库尚未发布 npm 包；转为 public 或公开发布素材前仍需先通过授权门槛。
+- `auto` guidance 为 1,382 字符，`frequent` 为 1,366 字符；40 个 `key=English/中文` 映射完整，`::emoji:` 模板只声明一次，并明确禁止模型直接输出 Markdown 图片或素材 URL。
+- 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
+- 发布素材前必须确认来源和授权范围。

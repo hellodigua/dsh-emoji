@@ -20,7 +20,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 数据流
 
-1. Host half 通过 DSH 0.1.0-rc.2 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
+1. Host half 通过 DSH 0.1.0-rc.6 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
 2. Web Client 注入 `dsh-client-ui-settings-plugins`，并在其 `settings.plugin.item` 插槽注册配置卡片。
 3. Client 通过 `/dsh-emoji-settings` 自有 Connection RPC 执行 `get`、`save`、`reset`、`pack-upload`、`pack-remove`；包操作细节见 [`user-emoji-packs.md`](user-emoji-packs.md)。
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。
@@ -35,7 +35,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 卡片界面一致性
 
-`settings.plugin.item` 的 slot 要求插件拥有自己的卡片渲染，但外壳遵循 DSH 内置 `PluginCard` 的交互视觉：使用 `@deepseek-ai/dsh-client-ui-primitives` 的 `IconChevronDownOutline14`，展开时旋转 180 度，并具有相同的 hover 边框、展开态背景和 `:focus-visible` 焦点框。所有选择器均以 `data-dsh-emoji-settings-*` 或 `dsh-emoji-settings-*` 命名，只作用于本插件卡片。2026-08-13 曾出现的文本字符 `⌄` / `⌃` 与缺失状态反馈问题已按此约定修复。
+`settings.plugin.item` 的 slot 要求插件拥有自己的卡片渲染，但外壳遵循 DSH 内置 `PluginCard` 的交互视觉：使用 `@deepseek-ai/dsh-client-ui-primitives` 的 `IconChevronDownOutline14`，展开时旋转 180 度，并具有相同的 hover 边框、展开态背景和 `:focus-visible` 焦点框。所有选择器均以 `data-dsh-emoji-settings-*` 或 `dsh-emoji-settings-*` 命名，只作用于本插件卡片。
 
 ## 安全边界
 
@@ -45,7 +45,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 - `packRevision` 由 Host 保留；普通 save/reset 不能伪造或把它清零。
 - Client bundle 只把 React 与 `react/jsx-runtime` 作为平台 external，避免打包第二份 React。
 - 输出包装器不依赖 `isAgentLoopRequest()` 的模块私有 `WeakSet` 身份，因为树外插件可能解析到另一份 `dsh-llm` 模块；它用稳定的 `purpose` 字段排除压缩和标题调用，再从请求已经装配的 system prompt 读取私有模式标记，设置并发变化不会改变正在生成的回答。
-- marker 必须精确命中包内 catalog 的稳定 ASCII `key`；任意文本不能直接组成文件路径或 URL。不可编辑协议明确禁止模型输出 Markdown 图片和素材 URL；转写器同时拦截普通文本中的本插件图片，合法标准文件名重新规范化、未知文件名删除。代码、链接与图片边界来自 CommonMark AST 节点位置，裸 HTTP(S) URL 另行保护；因此普通方括号和段落续行缩进仍属于可转写正文，而行内代码、围栏/缩进代码、Markdown 链接与图片、自动链接、裸 URL、转义、旧 `::中文名::`、未知 marker 和普通外部图片保持原文。
+- marker 必须精确命中包内 catalog 的稳定 ASCII `key`；任意文本不能直接组成文件路径或 URL。不可编辑协议明确禁止模型输出 Markdown 图片和素材 URL；转写器同时拦截普通文本中的本插件图片，合法标准文件名重新规范化、未知文件名删除。代码、链接与图片边界来自 CommonMark AST 节点位置，裸 HTTP(S) URL 另行保护；因此普通方括号和段落续行缩进仍属于可转写正文，而行内代码、围栏/缩进代码、Markdown 链接与图片、自动链接、裸 URL、转义、非协议 marker 和普通外部图片保持原文。
 - 用户可以用 `customPrompt` 定义表情偏好和跳过场景；模式标记、合法标签清单、智能 3 张/高频 4 张的程序上限、代码与链接边界、只处理面向用户正文等协议规则由插件在自定义内容之后重新声明，不能通过设置页删除。相同表情不去重。
 
 ## 当前语义
@@ -72,4 +72,4 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 | 偏大 | `large` | `2em` | `-0.55em` |
 | 大 | `xlarge` | `2.5em` | `-0.8em` |
 
-`normal`（界面“正常”）是默认值，旧配置缺少 `displaySize` 时由 schema 自动补齐该档；已经明确保存其他档位的用户配置保持不变。设置页使用草稿值即时更新一行真实的“文字 + 当前包表情 + 文字”预览以及当前标签页中的会话表情；放弃时恢复已保存值，保存后其他标签页自动刷新。选择器仍只命中 `/api/dsh-emoji/assets/`，不改变普通 Markdown 图片，也不修改素材、表情包协议或 system prompt。尺寸预览下方不再额外显示默认值说明。
+`normal`（界面“正常”）是默认值，配置缺少 `displaySize` 时由 schema 自动补齐该档；已经明确保存其他档位的用户配置保持不变。设置页使用草稿值即时更新一行真实的“文字 + 当前包表情 + 文字”预览以及当前标签页中的会话表情；放弃时恢复已保存值，保存后其他标签页自动刷新。选择器只命中 `/api/dsh-emoji/assets/`，不改变普通 Markdown 图片，也不修改素材、表情包协议或 system prompt。

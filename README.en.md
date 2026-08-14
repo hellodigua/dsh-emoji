@@ -71,9 +71,13 @@ Each key must have exactly one matching `.png`. IDs use lowercase letters, digit
 
 User packs live under `$DSH_HOME/emoji-packs/` (default `~/.dsh/emoji-packs/`), while Settings stores only the active `id@version`. **Remove** hides a pack from the selector but intentionally retains its immutable bytes for historical messages. Uploading the exact same ZIP restores that version.
 
+## Compatibility
+
+This version targets npm `@deepseek-ai/dsh@0.1.0-rc.6` and declares DSH peers as `^0.1.0-rc.6`. Local development pins the exact rc.6 type graph, while the Web Profile provides the shared runtime at deployment.
+
 ## Local development
 
-Requires Node.js `^22.19.0 || >=24`, pnpm 11, and npm credentials with access to `@deepseek-ai/*`.
+Requires Node.js `^22.19.0 || >=24` and pnpm 11.
 
 ```sh
 corepack pnpm install
