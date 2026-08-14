@@ -74,6 +74,13 @@ describe('Profile Bundle package', () => {
     expect(existsSync(new URL('../cordis.patch.yml', import.meta.url))).toBe(true)
   })
 
+  it('中英文 README 均链接 dshfind 插件超市', () => {
+    const chineseReadme = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
+    const englishReadme = readFileSync(new URL('../README.en.md', import.meta.url), 'utf8')
+    expect(chineseReadme).toContain('[dshfind.com](https://dshfind.com) DSH 插件超市')
+    expect(englishReadme).toContain('[dshfind.com](https://dshfind.com) DSH plugin marketplace')
+  })
+
   it('Bundle、Host、Client 和构建产物统一使用无 scope 包名', () => {
     const identityFiles = [
       '../cordis.patch.yml',

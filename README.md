@@ -108,3 +108,7 @@ corepack pnpm test
 corepack pnpm build
 corepack pnpm pack --dry-run
 ```
+
+## 友情链接
+
+已加入 [dshfind.com](https://dshfind.com) DSH 插件超市。

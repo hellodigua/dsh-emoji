@@ -96,3 +96,7 @@ corepack pnpm test
 corepack pnpm build
 corepack pnpm pack --dry-run
 ```
+
+## Links
+
+Available on the [dshfind.com](https://dshfind.com) DSH plugin marketplace.
