@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsdown'
 
-const PACKAGE_ID = '@dsh-external/dsh-emoji'
+const PACKAGE_ID = 'dsh-emoji'
 
 export default defineConfig([
   {

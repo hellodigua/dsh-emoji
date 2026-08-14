@@ -8,7 +8,25 @@
 
 ## 效果预览
 
+默认的大肥鱼表情：
+
 ![蓝鲸表情在 DSH 对话中的行内显示效果](assets/readme/chat-preview.png)
+
+切换到贴吧表情包后，也能使用同一套语义协议展示贴吧表情：
+
+![贴吧表情在 DSH 对话中的行内显示效果](assets/readme/chat-preview.tieba.png)
+
+未来还会支持微博、Bilibili、小红书、抖音等平台的表情。
+
+## 安装
+
+使用 DSH CLI 把插件加入 Web Profile，然后重启 Web Host：
+
+```sh
+dsh plugin --profile web add dsh-emoji
+```
+
+如需固定当前版本，使用 `dsh-emoji@0.2.0`。普通 `npm install dsh-emoji` 只会把包加入当前 Node.js 项目，不会启用 DSH 插件。
 
 ## 工作方式
 

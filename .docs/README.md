@@ -38,6 +38,7 @@
 - `src/client/index.ts`：Web 行内样式、设置失效同步和卡片注册。
 - `src/client/EmojiSettingsCard.tsx`：插件配置卡片。
 - `src/client/settings-controller.ts`：设置页状态、revision 与网络竞态控制。
+- `scripts/release.mjs`：校验构建与 tarball、同步 main/tag，并以可重跑方式发布公共 `dsh-emoji` 包。
 - `scripts/slice-deepseek-sheet.py`、`assets/emoji/deepseek/`：确定性切片工具与运行时素材。
 - `src/catalog.generated.ts`、`assets/emoji/bilibili/`：不进入运行时和发布包的素材生成参考。
 - `tests/`：catalog、检索、标签流、路由、Client 生命周期、设置和包结构验证。
@@ -49,7 +50,7 @@
 - 设置 RPC 只允许 loopback，并且不得放宽 DSH core 的通用设置白名单。
 - `auto` 与 `frequent` 的触发频率仍由模型选择，插件不会因漏标签自动补图。
 - 用户定义的表情偏好、插入位置和跳过场景依赖模型遵循提示词；程序只负责合法 marker、Markdown 边界和分档数量上限。
-- 素材公开分发前必须确认来源和权利范围，不能因代码使用 MIT 推定素材许可。
+- 内置素材由维护者确认可随 `dsh-emoji` 分发，但不纳入 MIT，也不授予脱离本项目单独再分发的权利。
 
 # 专题文档
 
@@ -57,14 +58,15 @@
 - [代码库摘要](codebase-summary.md)：运行时主链路、关键文件和验证入口。
 - [表情频率配置](features/emoji-settings.md)：设置数据流、安全边界、动态生效语义与阶段限制。
 - [用户表情包](features/user-emoji-packs.md)：ZIP 契约、安装事务、历史 URL、软移除和并发边界。
+- [npm 发布](features/release.md)：无 scope 包名、tarball 边界、main/tag/npm 顺序和可重跑语义。
 - [核心语义契约](../EMOJI_KEYS.md)：40 个稳定 key 的规范含义、相近语义边界和绘制要求。
 
 # 当前验证状态
 
 - DSH peers 使用 `^0.1.0-rc.6`；本地开发用精确 rc.6 devDependencies 固定类型检查和测试基线，部署由 Profile 提供共享 runtime。`dsh-api-gateway`、`dsh-invariants` 与 `dsh-typert-registry` 固定为同一 rc.6 类型身份。
-- 在真实 rc.6 npm 类型与运行时包图上，typecheck、9 个测试文件共 96 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界与易误判反例。
+- 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 102 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界与易误判反例。
 - 精确 `@deepseek-ai/dsh@0.1.0-rc.6` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
 - `auto` guidance 为 1,382 字符，`frequent` 为 1,366 字符；40 个 `key=English/中文` 映射完整，`::emoji:` 模板只声明一次，并明确禁止模型直接输出 Markdown 图片或素材 URL。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
-- 发布素材前必须确认来源和授权范围。
+- 公共包名为 `dsh-emoji`；`npm run release:check` 是 CI 与本地演练入口，`npm run release` 是维护者唯一正式发布入口。

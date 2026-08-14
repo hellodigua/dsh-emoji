@@ -1,11 +1,11 @@
 /**
  * DSH 行内表情插件 Host half：情绪标签提示、LLM 流转写、设置和 PNG 路由。
- * @module @dsh-external/dsh-emoji
+ * @module dsh-emoji
  */
 import type { Context } from '@deepseek-ai/cordis';
 import { type EmojiSettings } from './settings-model.ts';
 import { EmojiPackStore } from './packs.ts';
-export declare const name = "@dsh-external/dsh-emoji";
+export declare const name = "dsh-emoji";
 export declare const inject: string[];
 export declare const Config: import("@deepseek-ai/schemastery").default<EmojiSettings>;
 /** 根据实时配置生成下一次模型调用看到的表情策略。 */

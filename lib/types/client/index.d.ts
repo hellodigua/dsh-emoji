@@ -9,7 +9,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 export { EmojiSettingsCard, type EmojiSettingsCardFace, type EmojiSettingsCardProps, } from './EmojiSettingsCard.tsx';
 export { EmojiSettingsController, type EmojiSettingsErrorCode, type EmojiSettingsSnapshot, type EmojiSettingsStatus, } from './settings-controller.ts';
-export declare const EMOJI_STYLE_ID = "@dsh-external/dsh-emoji/inline-style";
+export declare const EMOJI_STYLE_ID = "dsh-emoji/inline-style";
 export declare const EMOJI_SELECTOR = "img[src*=\"/api/dsh-emoji/assets/\"]:not([data-dsh-emoji-pack-preview])";
 export declare const EMOJI_SETTINGS_CARD_SELECTOR = "[data-dsh-emoji-settings-card=\"true\"]";
 export declare function emojiCss(displaySize: EmojiDisplaySize): string;

@@ -8,9 +8,28 @@ const pnpmWorkspace = readFileSync(new URL('../pnpm-workspace.yaml', import.meta
 
 describe('Profile Bundle package', () => {
   it('以 0.2.0 发布用户表情包能力，并固定 ZIP 解码依赖', () => {
+    expect(packageJson.name).toBe('dsh-emoji')
     expect(packageJson.version).toBe('0.2.0')
+    expect(packageJson.private).toBeUndefined()
     expect(packageJson.dependencies.fflate).toBe('0.8.3')
     expect(packageJson.dependencies.pngjs).toBe('7.0.0')
+  })
+
+  it('声明个人仓库元数据和受校验的一键公开发布入口', () => {
+    expect(packageJson.repository).toEqual({
+      type: 'git',
+      url: 'git+https://github.com/hellodigua/dsh-emoji.git',
+    })
+    expect(packageJson.homepage).toBe('https://github.com/hellodigua/dsh-emoji#readme')
+    expect(packageJson.bugs.url).toBe('https://github.com/hellodigua/dsh-emoji/issues')
+    expect(packageJson.author).toBe('hellodigua')
+    expect(packageJson.publishConfig).toEqual({
+      access: 'public',
+      registry: 'https://registry.npmjs.org/',
+    })
+    expect(packageJson.scripts.prepack).toBe('pnpm run build')
+    expect(packageJson.scripts.release).toBe('node scripts/release.mjs')
+    expect(packageJson.scripts['release:check']).toBe('node scripts/release.mjs --dry-run')
   })
 
   it('同时声明 Bundle 和当前 Web Client manifest', () => {
@@ -50,9 +69,23 @@ describe('Profile Bundle package', () => {
 
   it('发布列表包含运行时需要的 Host、Client、patch 和资产', () => {
     expect(packageJson.files).toEqual(expect.arrayContaining([
-      'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'ASSETS.md', 'EMOJI_KEYS.md',
+      'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'README.en.md', 'ASSETS.md', 'EMOJI_KEYS.md',
     ]))
     expect(existsSync(new URL('../cordis.patch.yml', import.meta.url))).toBe(true)
+  })
+
+  it('Bundle、Host、Client 和构建产物统一使用无 scope 包名', () => {
+    const identityFiles = [
+      '../cordis.patch.yml',
+      '../tsdown.config.ts',
+      '../src/index.ts',
+      '../src/client/index.ts',
+    ]
+    for (const file of identityFiles) {
+      const source = readFileSync(new URL(file, import.meta.url), 'utf8')
+      expect(source).not.toContain('@dsh-external/dsh-emoji')
+    }
+    expect(readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')).toContain('name: dsh-emoji')
   })
 
   it('插件卡片使用 DSH 公共折叠图标，不再渲染平台相关的文本箭头', () => {

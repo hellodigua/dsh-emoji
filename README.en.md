@@ -10,6 +10,16 @@ Add switchable, customizable inline emoji to DeepSeek Harness responses.
 
 ![Inline whale emoji in a DSH conversation](assets/readme/chat-preview.en.png)
 
+## Installation
+
+Add the plugin to the Web Profile with the DSH CLI, then restart the Web Host:
+
+```sh
+dsh plugin --profile web add dsh-emoji
+```
+
+Use `dsh-emoji@0.2.0` to pin this release. A plain `npm install dsh-emoji` only adds the package to the current Node.js project; it does not enable the DSH plugin.
+
 ## How it works
 
 - The AI emits semantic markers such as `::emoji:happy::`, which the Host converts into inline images from the active emoji pack without another model call.

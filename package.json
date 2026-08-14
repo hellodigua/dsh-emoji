@@ -1,9 +1,24 @@
 {
-  "name": "@dsh-external/dsh-emoji",
+  "name": "dsh-emoji",
   "version": "0.2.0",
-  "private": true,
   "type": "module",
   "description": "Tiny semantic inline emoji for DSH Agent responses",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "emoji",
+    "inline-emoji"
+  ],
+  "homepage": "https://github.com/hellodigua/dsh-emoji#readme",
+  "bugs": {
+    "url": "https://github.com/hellodigua/dsh-emoji/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hellodigua/dsh-emoji.git"
+  },
+  "author": "hellodigua",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {
@@ -32,9 +47,16 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "packageManager": "pnpm@11.7.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "pnpm run clean && tsc -p tsconfig.json --emitDeclarationOnly && tsdown",
     "clean": "node scripts/clean.mjs",
+    "prepack": "pnpm run build",
+    "release": "node scripts/release.mjs",
+    "release:check": "node scripts/release.mjs --dry-run",
     "slice:deepseek": "python3 scripts/slice-deepseek-sheet.py",
     "sync:bilibili": "node scripts/sync-bilibili-assets.mjs",
     "test": "vitest run",

@@ -103,7 +103,7 @@ describe('Web Client inline style', () => {
   it('把 style 挂到 head，并在 disposer 时完整清理', () => {
     const dispose = installEmojiStyles(document)
     const style = document.head.querySelector<HTMLStyleElement>(`style[data-plugin-css=${JSON.stringify(EMOJI_STYLE_ID)}]`)
-    expect(style?.dataset.plugin).toBe('@dsh-external/dsh-emoji')
+    expect(style?.dataset.plugin).toBe('dsh-emoji')
     expect(style?.textContent).toBe(EMOJI_CSS)
     dispose()
     expect(document.head.querySelector(`style[data-plugin-css=${JSON.stringify(EMOJI_STYLE_ID)}]`)).toBeNull()

@@ -1,6 +1,6 @@
 /**
  * DSH 行内表情插件 Host half：情绪标签提示、LLM 流转写、设置和 PNG 路由。
- * @module @dsh-external/dsh-emoji
+ * @module dsh-emoji
  */
 
 import type {} from '@deepseek-ai/dsh-host-webserver'
@@ -29,7 +29,7 @@ import {
 import { BUILTIN_PACK_REF } from './pack-model.ts'
 import { EmojiPackStore } from './packs.ts'
 
-export const name = '@dsh-external/dsh-emoji'
+export const name = 'dsh-emoji'
 export const inject = ['llm', 'systemPrompt']
 export const Config = EmojiSettingsSchema
 

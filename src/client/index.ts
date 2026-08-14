@@ -33,7 +33,7 @@ export {
   type EmojiSettingsStatus,
 } from './settings-controller.ts'
 
-export const EMOJI_STYLE_ID = '@dsh-external/dsh-emoji/inline-style'
+export const EMOJI_STYLE_ID = 'dsh-emoji/inline-style'
 export const EMOJI_SELECTOR = 'img[src*="/api/dsh-emoji/assets/"]:not([data-dsh-emoji-pack-preview])'
 export const EMOJI_SETTINGS_CARD_SELECTOR = '[data-dsh-emoji-settings-card="true"]'
 
@@ -121,7 +121,7 @@ export function installEmojiStyles(
   // factories. Replace it; its captured disposer only targets the detached node.
   doc.head.querySelector<HTMLStyleElement>(`style[data-plugin-css=${JSON.stringify(EMOJI_STYLE_ID)}]`)?.remove()
   const style = doc.createElement('style')
-  style.dataset.plugin = '@dsh-external/dsh-emoji'
+  style.dataset.plugin = 'dsh-emoji'
   style.dataset.pluginCss = EMOJI_STYLE_ID
   style.textContent = emojiCss(displaySize)
   doc.head.appendChild(style)
