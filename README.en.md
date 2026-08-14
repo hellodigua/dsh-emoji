@@ -22,17 +22,17 @@ Use `dsh-emoji@0.2.0` to pin this release. A plain `npm install dsh-emoji` only 
 
 ## How it works
 
-- The AI emits semantic markers such as `::happy::`, which the Host converts into inline images from the active emoji pack without another model call.
+- When the AI wants an emotional or decorative reaction, the built-in protocol tells it to emit a semantic marker such as `::happy::`. The Host converts that marker into an inline image from the active emoji pack without another model call.
 - Built-in and uploaded packs share 40 stable semantic keys, can be switched at any time, and support four display sizes.
-- Rewriting applies only to normal reply text and plugin images. Code, links, unknown markers, and other Markdown images are left unchanged, and repeated emoji are allowed.
+- Rewriting applies only to plugin markers and plugin images. Unicode emoji in ordinary text, code, links, unknown markers, and other Markdown images are left unchanged. Reply text must separate multiple plugin emoji, while a key may repeat later.
 
 ## Adjusting emoji frequency
 
 After installation and a Web Host restart, open **Settings → Plugins → Whale Emoji**:
 
 - **Off**: do not use emoji.
-- **Smart**: use emoji naturally when it helps express emotion, up to 3 per turn. This is the default.
-- **Frequent**: actively use emoji in multiple suitable places, up to 4 per turn.
+- **Smart**: use emoji only when it meaningfully helps express emotion, up to 3 per turn. This is the default.
+- **Frequent**: consider emoji more readily without forcing one or seeking multiple emoji, up to 4 per turn.
 
 You can also choose an emoji pack, adjust its display size, or use **Additional prompt** to control emoji selection, tone, and usage. Changes apply to the next reply without a restart. The model still decides whether to use an emoji.
 

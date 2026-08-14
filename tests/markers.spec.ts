@@ -27,9 +27,9 @@ function stream(text: string, reason: 'stop' | 'tool-calls' = 'stop'): AsyncIter
 }
 
 describe('emoji marker rewrite', () => {
-  it('允许重复表情，并在达到当前模式上限后移除多余标签', () => {
+  it('允许由正文隔开的重复表情，并移除连续标签和超出上限的标签', () => {
     const result = rewriteEmojiMarkersWithLimit([
-      '开心 ::happy::',
+      '开心 ::happy:: ::approve::',
       '还是开心 ::happy::',
       '有点生气 ::angry::',
       '最后大笑 ::laughing::',
@@ -39,9 +39,30 @@ describe('emoji marker rewrite', () => {
         '开心 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)',
         '还是开心 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)',
         '有点生气 ![Angry](http://127.0.0.1:3080/assets/ds_05.png)',
-        '最后大笑 ',
+        '最后大笑',
       ].join('\n'),
       emojiCount: 3,
+    })
+  })
+
+  it('保留普通正文、代码和链接里的 Unicode emoji，同时拦截连续插件表情', () => {
+    const source = [
+      '你好 👋 ❤️ 👍🏽 👨‍👩‍👧‍👦 🇨🇳 1️⃣ ::happy:: ::approve::',
+      'English (hello)👋 world.',
+      '版权 © 2026 与文本心形 ❤ 保留。',
+      '`代码 👋` [链接 👋](https://example.com/👋)',
+      '下一句有意义，所以允许第二张 ::sad::',
+    ].join('\n')
+    const result = rewriteEmojiMarkersWithLimit(source, imageUrl, 3)
+    expect(result).toEqual({
+      text: [
+        '你好 👋 ❤️ 👍🏽 👨‍👩‍👧‍👦 🇨🇳 1️⃣ ![Happy](http://127.0.0.1:3080/assets/ds_01.png)',
+        'English (hello)👋 world.',
+        '版权 © 2026 与文本心形 ❤ 保留。',
+        '`代码 👋` [链接 👋](https://example.com/👋)',
+        '下一句有意义，所以允许第二张 ![Sad](http://127.0.0.1:3080/assets/ds_02.png)',
+      ].join('\n'),
+      emojiCount: 2,
     })
   })
 
@@ -57,7 +78,7 @@ describe('emoji marker rewrite', () => {
       text: [
         '规范化 ![Laugh Cry](http://127.0.0.1:3080/assets/ds_23.png)',
         '后续重复 ![Doge](http://127.0.0.1:3080/assets/ds_07.png)',
-        '臆造 ',
+        '臆造',
         '普通外图 ![Logo](https://example.com/logo.png)',
       ].join('\n'),
       emojiCount: 2,
@@ -70,7 +91,7 @@ describe('emoji marker rewrite', () => {
       '有效 ::sweating::',
     ].join('\n'), imageUrl)
     expect(result.text).toBe([
-      '错误 ',
+      '错误',
       '有效 ![Sweating](http://127.0.0.1:3080/assets/ds_12.png)',
     ].join('\n'))
   })
@@ -169,11 +190,11 @@ describe('emoji marker rewrite', () => {
 
   it('保留旧 rewriteEmojiMarkers 的第三参数和 directive 返回契约', () => {
     expect(rewriteEmojiMarkers('第一张 ::happy:: 第二张 ::sad::', imageUrl)).toEqual({
-      text: '第一张 ![Happy](http://127.0.0.1:3080/assets/ds_01.png) 第二张 ',
+      text: '第一张 ![Happy](http://127.0.0.1:3080/assets/ds_01.png) 第二张',
       directive: 'emoji',
     })
     expect(rewriteEmojiMarkers('后续 ::happy::', imageUrl, 'emoji')).toEqual({
-      text: '后续 ',
+      text: '后续',
       directive: 'emoji',
     })
   })
@@ -222,6 +243,24 @@ describe('emoji stream rewrite', () => {
     const chunks = await collect(rewriteEmojiStream(source, { imageUrl, maxEmojis: 4 }))
     const blocks = chunks.filter(chunk => chunk.type === 'block-end' && chunk.block.type === 'text')
     expect(blocks.filter(chunk => chunk.type === 'block-end' && chunk.block.text.includes('![Happy]('))).toHaveLength(4)
-    expect(blocks.at(-1)).toMatchObject({ block: { type: 'text', text: '第5段 ' } })
+    expect(blocks.at(-1)).toMatchObject({ block: { type: 'text', text: '第5段' } })
+  })
+
+  it('跨 text block 也不会保留没有正文间隔的连续表情', async () => {
+    const source = (async function* (): AsyncIterable<StreamChunk> {
+      const blocks = ['第一段 ::happy::', '::approve::', '第二段正文 ::approve::']
+      for (const [index, text] of blocks.entries()) {
+        yield { type: 'block-start', index, blockType: 'text' }
+        yield { type: 'block-end', index, block: { type: 'text', text } }
+      }
+      yield { type: 'finish', reason: { kind: 'stop' } }
+    })()
+    const chunks = await collect(rewriteEmojiStream(source, { imageUrl, maxEmojis: 3 }))
+    const blocks = chunks.filter(chunk => chunk.type === 'block-end' && chunk.block.type === 'text')
+    expect(blocks).toMatchObject([
+      { block: { text: '第一段 ![Happy](http://127.0.0.1:3080/assets/ds_01.png)' } },
+      { block: { text: '' } },
+      { block: { text: '第二段正文 ![Approve](http://127.0.0.1:3080/assets/ds_19.png)' } },
+    ])
   })
 })

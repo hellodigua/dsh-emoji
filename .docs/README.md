@@ -20,7 +20,7 @@
 - `dsh-emoji` Settings 命名空间持久化配置；loopback-only 自有 RPC 只读写本插件命名空间。
 - Host RPC 返回稳定错误码与英文 canonical message；Client controller 把错误收敛为有限状态，设置卡片再按当前 DSH locale 显示。
 - system prompt 随设置实时更新；请求内的模式标记决定该次流是否转写。
-- 智能模式在程序层最多保留 3 张表情，高频模式最多保留 4 张；相同 key 可以重复，代码和链接区域不转写。
+- 智能模式在程序层最多保留 3 张表情，高频模式最多保留 4 张；两种模式都允许零张且一张通常足够，多张之间必须存在有效正文。提示协议要求模型把情绪或装饰性反应写成 marker，作为正文内容的 Unicode emoji 仍保持原文；相同 key 可以在正文不同位置重复。
 - 切片脚本按 SHA-256 识别当前 `8×5` 正面鲸鱼完整版总览图，共维护 40 张 `128×128 RGBA PNG`。
 - Profile Bundle 同时装配 Host half 与 Web Client half。
 - 当前插件只面向 DSH `^0.1.0-rc.6`：Web 配置卡片接入 `dsh-client-ui-settings-plugins`，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`；不保留 `0.0.1-rc.*` 兼容层。
@@ -64,9 +64,9 @@
 # 当前验证状态
 
 - DSH peers 使用 `^0.1.0-rc.6`；本地开发用精确 rc.6 devDependencies 固定类型检查和测试基线，部署由 Profile 提供共享 runtime。`dsh-api-gateway`、`dsh-invariants` 与 `dsh-typert-registry` 固定为同一 rc.6 类型身份。
-- 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 102 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界与易误判反例。
+- 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 104 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界、Unicode emoji 保留、相邻 marker 与易误判反例。
 - 精确 `@deepseek-ai/dsh@0.1.0-rc.6` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- `auto` guidance 为 1,376 字符，`frequent` 为 1,360 字符；system prompt 只声明一次 `::<key>::` 模板，并明确禁止模型直接输出 Markdown 图片或素材 URL，40 个 `key=English/中文` 映射保持完整。
+- `auto` guidance 为 1,387 字符，`frequent` 为 1,378 字符；system prompt 只声明一次 `::<key>::` 模板，明确零张合法、一张通常足够、多张需要正文分隔，并要求情绪或装饰性反应使用 marker、禁止模型直接输出 Markdown 图片或素材 URL。作为字面正文内容的 Unicode emoji 不属于插件协议，保持原文；40 个 `key=English/中文` 映射保持完整。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
 - 公共包名为 `dsh-emoji`；`npm run release:check` 是 CI 与本地演练入口，`npm run release` 是维护者唯一正式发布入口。

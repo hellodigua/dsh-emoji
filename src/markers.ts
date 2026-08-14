@@ -19,6 +19,7 @@ type MarkerDirective = 'none' | 'emoji'
 interface MarkerRewriteState {
   count: number
   readonly limit: number
+  hasMeaningfulTextSinceEmoji: boolean
 }
 
 /** 一段文本完成标签转写后的结果。 */
@@ -45,6 +46,12 @@ const emojiByMarkerBody = new Map<string, EmojiCatalogEntry>(
 const emojiByAssetFile = new Map<string, EmojiCatalogEntry>(
   EMOJIS.flatMap(emoji => [[`${emoji.key}.png`, emoji] as const, [emoji.file, emoji] as const]),
 )
+
+const meaningfulTextPattern = /[\p{L}\p{N}]/u
+
+function noteMeaningfulText(state: MarkerRewriteState, text: string): void {
+  if (meaningfulTextPattern.test(text)) state.hasMeaningfulTextSinceEmoji = true
+}
 
 interface DirectEmojiImage {
   readonly end: number
@@ -169,20 +176,31 @@ function rewritePlainText(
 ): string {
   let output = ''
   let rangeIndex = 0
+  let removedInlineToken = false
   for (let index = 0; index < text.length;) {
     while ((protectedRanges[rangeIndex]?.end ?? Number.POSITIVE_INFINITY) <= index) rangeIndex += 1
     const protectedRange = protectedRanges[rangeIndex]
     if (protectedRange?.start === index) {
-      output += text.slice(protectedRange.start, protectedRange.end)
+      const protectedText = text.slice(protectedRange.start, protectedRange.end)
+      output += protectedText
+      noteMeaningfulText(state, protectedText)
+      removedInlineToken = false
       index = protectedRange.end
       continue
     }
 
     const directImage = isEscaped(text, index) ? undefined : directEmojiImageAt(text, index)
     if (directImage !== undefined) {
-      if (state.count < state.limit && directImage.emoji !== undefined) {
+      if (state.count < state.limit
+        && state.hasMeaningfulTextSinceEmoji
+        && directImage.emoji !== undefined) {
         state.count += 1
+        state.hasMeaningfulTextSinceEmoji = false
         output += markdownImage(directImage.emoji, imageUrl)
+        removedInlineToken = false
+      } else {
+        output = output.replace(/[ \t]+$/u, '')
+        removedInlineToken = true
       }
       index = directImage.end
       continue
@@ -190,7 +208,10 @@ function rewritePlainText(
 
     const rawUrlEnd = isEscaped(text, index) ? undefined : rawUrlEndAt(text, index)
     if (rawUrlEnd !== undefined) {
-      output += text.slice(index, rawUrlEnd)
+      const rawUrl = text.slice(index, rawUrlEnd)
+      output += rawUrl
+      noteMeaningfulText(state, rawUrl)
+      removedInlineToken = false
       index = rawUrlEnd
       continue
     }
@@ -201,21 +222,43 @@ function rewritePlainText(
         const markerBody = text.slice(index + 2, close)
         const emoji = emojiByMarkerBody.get(markerBody)
         if (emoji !== undefined) {
-          if (state.count < state.limit) {
+          if (state.count < state.limit && state.hasMeaningfulTextSinceEmoji) {
             state.count += 1
+            state.hasMeaningfulTextSinceEmoji = false
             output += markdownImage(emoji, imageUrl)
+            removedInlineToken = false
+          } else {
+            output = output.replace(/[ \t]+$/u, '')
+            removedInlineToken = true
           }
-          // 超出当前模式上限的合法标签会被移除；相同表情不去重。
+          // 超出模式上限或紧邻上一张图片的合法标签会被移除。
           index = close + 2
           continue
         }
       }
     }
 
-    output += text[index]
+    const character = text[index] ?? ''
+    if (removedInlineToken && /[ \t]/u.test(character)) {
+      if (output.length === 0 || /\s$/u.test(output) || !state.hasMeaningfulTextSinceEmoji) {
+        index += 1
+        continue
+      }
+    }
+    output += character
+    noteMeaningfulText(state, character)
+    removedInlineToken = false
     index += 1
   }
   return output
+}
+
+function rewriteEmojiText(
+  text: string,
+  state: MarkerRewriteState,
+  imageUrl: (emoji: EmojiCatalogEntry) => string,
+): string {
+  return rewritePlainText(text, state, imageUrl, markdownProtectedRanges(text))
 }
 
 /**
@@ -235,8 +278,9 @@ export function rewriteEmojiMarkersWithLimit(
   const state: MarkerRewriteState = {
     count: Math.max(0, initialEmojiCount),
     limit: Math.max(0, maxEmojis),
+    hasMeaningfulTextSinceEmoji: initialEmojiCount === 0,
   }
-  const textWithEmoji = rewritePlainText(text, state, imageUrl, markdownProtectedRanges(text))
+  const textWithEmoji = rewriteEmojiText(text, state, imageUrl)
   return { text: textWithEmoji, emojiCount: state.count }
 }
 
@@ -279,14 +323,17 @@ export async function* rewriteEmojiStream(
   source: AsyncIterable<StreamChunk>,
   options: EmojiStreamRewriteOptions,
 ): AsyncIterable<StreamChunk> {
-  let emojiCount = 0
   const maxEmojis = options.maxEmojis ?? 3
+  const state: MarkerRewriteState = {
+    count: 0,
+    limit: Math.max(0, maxEmojis),
+    hasMeaningfulTextSinceEmoji: true,
+  }
 
   for await (const chunk of source) {
     if (chunk.type === 'block-end' && chunk.block.type === 'text') {
-      const rewritten = rewriteEmojiMarkersWithLimit(chunk.block.text, options.imageUrl, maxEmojis, emojiCount)
-      emojiCount = rewritten.emojiCount
-      yield { ...chunk, block: { ...chunk.block, text: rewritten.text } }
+      const text = rewriteEmojiText(chunk.block.text, state, options.imageUrl)
+      yield { ...chunk, block: { ...chunk.block, text } }
       continue
     }
     yield chunk
