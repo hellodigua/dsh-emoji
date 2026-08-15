@@ -18,7 +18,7 @@ Add the plugin to the Web Profile with the DSH CLI, then restart the Web Host:
 dsh plugin --profile web add dsh-emoji
 ```
 
-Use `dsh-emoji@0.2.1` to pin this release. A plain `npm install dsh-emoji` only adds the package to the current Node.js project; it does not enable the DSH plugin.
+Use `dsh-emoji@0.2.2-beta.1` to pin this release. A plain `npm install dsh-emoji` only adds the package to the current Node.js project; it does not enable the DSH plugin.
 
 ## How it works
 

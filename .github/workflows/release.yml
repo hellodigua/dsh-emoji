@@ -26,6 +26,7 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
       - name: 校验版本
+        id: version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
@@ -47,6 +48,19 @@ jobs:
             echo "Tagged commit $TAG_COMMIT is not part of main" >&2
             exit 1
           fi
+          if [[ "$TAG_VERSION" == *-* ]]; then
+            PRERELEASE_ID="${TAG_VERSION#*-}"
+            NPM_TAG="${PRERELEASE_ID%%.*}"
+            if [[ ! "$NPM_TAG" =~ ^[A-Za-z][0-9A-Za-z-]*$ ]]; then
+              echo "Prerelease version $TAG_VERSION has no valid npm dist-tag" >&2
+              exit 1
+            fi
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            NPM_TAG="latest"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
       - run: pnpm install --frozen-lockfile
       - run: npm run release:check
       - run: git diff --exit-code
@@ -56,15 +70,24 @@ jobs:
           TARBALL="$(npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP")"
           echo "path=$RUNNER_TEMP/$TARBALL" >> "$GITHUB_OUTPUT"
       - name: 发布到 npm
-        run: npm publish "$TARBALL" --provenance --access public
+        run: npm publish "$TARBALL" --provenance --access public --tag "$NPM_TAG"
         env:
           TARBALL: ${{ steps.package.outputs.path }}
+          NPM_TAG: ${{ steps.version.outputs.npm_tag }}
       - name: 创建 GitHub Release
-        run: >-
-          gh release create "$GITHUB_REF_NAME" "$TARBALL"
-          --verify-tag
-          --title "$GITHUB_REF_NAME"
-          --generate-notes
+        run: |
+          RELEASE_ARGS=(
+            "$GITHUB_REF_NAME"
+            "$TARBALL"
+            --verify-tag
+            --title "$GITHUB_REF_NAME"
+            --generate-notes
+          )
+          if [[ "$PRERELEASE" == "true" ]]; then
+            RELEASE_ARGS+=(--prerelease)
+          fi
+          gh release create "${RELEASE_ARGS[@]}"
         env:
           GH_TOKEN: ${{ github.token }}
           TARBALL: ${{ steps.package.outputs.path }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}

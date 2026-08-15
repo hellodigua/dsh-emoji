@@ -26,20 +26,21 @@ CI 在 `main` push 和 pull request 上执行同一检查。发布 workflow 还�
 2. job 只授予 `contents: write` 与 `id-token: write`；npm 通过 Trusted Publisher 的 OIDC 身份发布，不保存长期 npm token。
 3. 只接受 annotated tag，且只发布 `main` 历史上的提交；使用 frozen lockfile 安装依赖，执行 `npm run release:check`，并确认 tag 中的版本与 `package.json` 完全一致。
 4. 校验通过后生成一次 tarball，使用 `npm publish <tarball> --provenance` 发布，并把同一文件附加到 GitHub Release，保证两处产物一致。
-5. npm 发布成功后创建 GitHub Release。
+5. 稳定版发布到 npm `latest`；预发布版按首个 prerelease 标识发布到对应 dist-tag，并将 GitHub Release 标记为 prerelease。
+6. npm 发布成功后创建 GitHub Release。
 
 npm Trusted Publisher 绑定仓库 `hellodigua/dsh-emoji` 和 workflow 文件名 `release.yml`，不使用 GitHub Environment。
 
-## 发布 0.2.1
+## 发布 0.2.2-beta.1
 
 发布前确认：
 
 - `main` 包含完整源码、测试和最新 `lib/`。
-- `package.json` 版本为 `0.2.1`，包名为 `dsh-emoji`。
-- `CHANGELOG.md` 已记录并经人工审阅确认 `0.2.1`。
+- `package.json` 版本为 `0.2.2-beta.1`，包名为 `dsh-emoji`。
+- `CHANGELOG.md` 已记录并经人工审阅确认 `0.2.2-beta.1`。
 - npm Trusted Publisher 已配置完成。
 - `npm run release:check` 与 GitHub CI 均通过。
 
-然后为待发布的 `main` 提交创建 annotated tag `v0.2.1` 并推送。不要复用或移动已经发布的版本 tag；npm 版本不可覆盖，修复发布内容时必须提升版本号。
+然后为待发布的 `main` 提交创建 annotated tag `v0.2.2-beta.1` 并推送。该版本发布到 npm `beta` dist-tag，并创建 GitHub prerelease。不要复用或移动已经发布的版本 tag；npm 版本不可覆盖，修复发布内容时必须提升版本号。
 
 如果 npm 发布成功但 GitHub Release 创建失败，只补建相同 tag 的 GitHub Release，不得重新发布或覆盖 npm 内容。

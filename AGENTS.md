@@ -15,13 +15,6 @@
 
 ## 发版规则
 
-- 用户明确提出“发版”或“发布版本”时，只视为授权完成发版准备和下述人工审阅关卡，不得直接提交、推送、创建 tag 或发布。用户在审阅后明确说“继续”或“继续发版”，才视为授权自动完成余下的提交、推送、CI、tag、npm 发布和 GitHub Release 验证，不再为这些标准步骤逐项请求确认。
-- 默认直接在 `main` 上发版，不创建发版准备分支。开始准备前必须确认当前分支为 `main`、工作区没有不属于本次发版的未提交改动，并与 `origin/main` 同步；任一条件不满足时先停止并说明。
-- 用户指定版本时使用该版本；未指定时根据上一个已发布版本和本次变更按 SemVer 推导版本。无法可靠判断是否包含破坏性变更时，先向用户确认版本号。
-- 发布前更新 `package.json` 中的版本、受影响的 lockfile、README 安装示例和 `CHANGELOG.md`。`CHANGELOG.md` 使用 `## [X.Y.Z] - YYYY-MM-DD` 标题，内容只记录面向用户的新增、变更和修复，不写调研或发版操作过程。
-- 补齐上述文件后必须停止，向用户展示目标版本和改动摘要，请用户审阅 `CHANGELOG.md` 及其他待发布文件，并明确询问是否继续。此关卡不得创建 release commit、推送 main、创建 tag 或触发发布。
-- 用户确认继续后，先重新读取工作区状态和完整 diff，保留用户在审阅期间对 changelog 或其他文件所做的修改，不得覆盖或还原；这些修改属于本次发版候选内容。若发现版本不一致、敏感信息、明显无关改动或其他发布风险，停止并说明，否则继续完成发版。
-- 重新构建需要随包交付的 `lib/` 并完成提交前检查，创建 `chore(release): prepare vX.Y.Z` 提交；然后在干净的 release commit 上执行 `npm run release:check`，通过后才推送 `main` 并等待 CI。发布校验要求干净工作区时，不得通过跳过检查规避。
-- 只在通过验证的 `main` 发版提交上创建 annotated tag：`git tag -a vX.Y.Z -m "vX.Y.Z"`。推送 tag 后等待发布 workflow 完成，并核对 npm 版本、GitHub Release、tag 和提交版本一致。
-- 发布 workflow 只负责校验、生成一次 tarball、发布 npm 和创建 GitHub Release，不得修改版本、生成 changelog、提交代码或移动 tag。
-- 已推送的版本 tag 视为不可变，不得删除、移动或复用；npm 版本也不得覆盖。发布失败时保留证据并停止，修复代码后提升版本重新发布；如果只有 GitHub Release 创建失败而 npm 已成功，只补建同一 tag 的 GitHub Release。
+- 用户说“发版”时，直接在干净且与远端同步的 `main` 上按 SemVer 准备版本号、lockfile、README 和 `CHANGELOG.md`，然后停止并请用户审阅
+- 用户说“继续”后，重新读取并保留其审阅修改，完成构建与检查，提交 `chore(release): vX.Y.Z`，运行 `pnpm release:check`，推送 `main` 并等待 CI。
+- CI 通过后创建并推送 annotated tag `vX.Y.Z`；workflow 只负责校验、发布同一 tarball 到 npm 并创建 GitHub Release，完成后核对版本和产物一致。

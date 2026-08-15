@@ -11,7 +11,7 @@ const EXPECTED_REPOSITORY = 'git+https://github.com/hellodigua/dsh-emoji.git'
 const EXPECTED_NPM_USER = 'hellodigua'
 const NPM_REGISTRY = 'https://registry.npmjs.org/'
 const MAX_TARBALL_SIZE = 6 * 1024 * 1024
-const STABLE_SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
+const RELEASE_SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?$/
 const root = resolve(import.meta.dirname, '..')
 
 function fail(message) {
@@ -66,6 +66,10 @@ export function validateChangelog(changelog, expectedVersion) {
   const escapedVersion = expectedVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const heading = new RegExp(`^## \\[${escapedVersion}\\] - \\d{4}-\\d{2}-\\d{2}$`, 'm')
   if (!heading.test(changelog)) fail(`CHANGELOG.md 缺少 ${expectedVersion} 的日期标题`)
+}
+
+export function validateReleaseVersion(version) {
+  if (!RELEASE_SEMVER_PATTERN.test(version)) fail(`版本号不是可发布 SemVer：${version}`)
 }
 
 export function validatePackReport(raw, expectedName, expectedVersion) {
@@ -135,7 +139,7 @@ export function main(argv = process.argv.slice(2)) {
   if (packageJson.repository?.url !== EXPECTED_REPOSITORY) {
     fail(`repository 必须是 ${EXPECTED_REPOSITORY}`)
   }
-  if (!STABLE_SEMVER_PATTERN.test(packageJson.version)) fail(`版本号不是稳定版 SemVer：${packageJson.version}`)
+  validateReleaseVersion(packageJson.version)
   if (packageJson.private !== undefined) fail('发布包不能声明 private')
   if (packageJson.publishConfig?.access !== 'public') fail('publishConfig.access 必须是 public')
   if (packageJson.publishConfig?.registry !== NPM_REGISTRY) fail(`publishConfig.registry 必须是 ${NPM_REGISTRY}`)

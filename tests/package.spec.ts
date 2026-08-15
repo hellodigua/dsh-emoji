@@ -8,9 +8,9 @@ const pnpmWorkspace = readFileSync(new URL('../pnpm-workspace.yaml', import.meta
 const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8')
 
 describe('Profile Bundle package', () => {
-  it('以 0.2.1 发布用户表情包能力，并固定 ZIP 解码依赖', () => {
+  it('以 0.2.2-beta.1 发布用户表情包能力，并固定 ZIP 解码依赖', () => {
     expect(packageJson.name).toBe('dsh-emoji')
-    expect(packageJson.version).toBe('0.2.1')
+    expect(packageJson.version).toBe('0.2.2-beta.1')
     expect(packageJson.private).toBeUndefined()
     expect(packageJson.dependencies.fflate).toBe('0.8.3')
     expect(packageJson.dependencies.pngjs).toBe('7.0.0')
@@ -73,7 +73,7 @@ describe('Profile Bundle package', () => {
       'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'README.en.md', 'ASSETS.md', 'CHANGELOG.md', 'EMOJI_KEYS.md',
     ]))
     expect(existsSync(new URL('../cordis.patch.yml', import.meta.url))).toBe(true)
-    expect(changelog).toMatch(/^## \[0\.2\.1\] - \d{4}-\d{2}-\d{2}$/m)
+    expect(changelog).toMatch(/^## \[0\.2\.2-beta\.1\] - \d{4}-\d{2}-\d{2}$/m)
   })
 
   it('中英文 README 均链接 dshfind 插件超市', () => {
