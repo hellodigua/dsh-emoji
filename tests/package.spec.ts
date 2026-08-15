@@ -5,6 +5,7 @@ import { EMOJI_KEY_SET } from '../src/pack-model.ts'
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const pnpmWorkspace = readFileSync(new URL('../pnpm-workspace.yaml', import.meta.url), 'utf8')
+const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8')
 
 describe('Profile Bundle package', () => {
   it('以 0.2.0 发布用户表情包能力，并固定 ZIP 解码依赖', () => {
@@ -69,9 +70,10 @@ describe('Profile Bundle package', () => {
 
   it('发布列表包含运行时需要的 Host、Client、patch 和资产', () => {
     expect(packageJson.files).toEqual(expect.arrayContaining([
-      'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'README.en.md', 'ASSETS.md', 'EMOJI_KEYS.md',
+      'assets/emoji/deepseek', 'lib', 'cordis.patch.yml', 'README.md', 'README.en.md', 'ASSETS.md', 'CHANGELOG.md', 'EMOJI_KEYS.md',
     ]))
     expect(existsSync(new URL('../cordis.patch.yml', import.meta.url))).toBe(true)
+    expect(changelog).toMatch(/^## \[0\.2\.0\] - \d{4}-\d{2}-\d{2}$/m)
   })
 
   it('中英文 README 均链接 dshfind 插件超市', () => {

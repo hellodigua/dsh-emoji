@@ -106,7 +106,7 @@ corepack pnpm install
 corepack pnpm typecheck
 corepack pnpm test
 corepack pnpm build
-corepack pnpm pack --dry-run
+npm pack --dry-run
 ```
 
 ## 友情链接

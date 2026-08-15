@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { calculateIntegrity, validatePackReport } from '../scripts/release.mjs'
+import { calculateIntegrity, validateChangelog, validatePackReport } from '../scripts/release.mjs'
 
 const temporaryDirectories: string[] = []
 
@@ -16,7 +16,7 @@ function packReport(overrides: Record<string, unknown> = {}) {
   const files = [
     'package.json', 'lib/index.js', 'lib/client.js', 'lib/types/index.d.ts',
     'lib/types/client/index.d.ts', 'cordis.patch.yml', 'README.md',
-    'README.en.md', 'ASSETS.md', 'EMOJI_KEYS.md', 'LICENSE',
+    'README.en.md', 'ASSETS.md', 'CHANGELOG.md', 'EMOJI_KEYS.md', 'LICENSE',
     ...Array.from({ length: 40 }, (_, index) => `assets/emoji/deepseek/ds_${String(index + 1).padStart(2, '0')}.png`),
   ].map(path => ({ path, size: 1, mode: 0o644 }))
   return JSON.stringify([{
@@ -31,6 +31,13 @@ function packReport(overrides: Record<string, unknown> = {}) {
 }
 
 describe('release helpers', () => {
+  it('要求 changelog 包含当前版本和发布日期', () => {
+    expect(() => validateChangelog('## [0.2.0] - 2026-08-15\n', '0.2.0')).not.toThrow()
+    expect(() => validateChangelog('## [0.1.0] - 2026-08-15\n', '0.2.0')).toThrow(
+      'CHANGELOG.md 缺少 0.2.0 的日期标题',
+    )
+  })
+
   it('由版本 tag 自动发布 npm 包并创建 GitHub Release', () => {
     const workflow = readFileSync(
       new URL('../.github/workflows/release.yml', import.meta.url),

@@ -62,6 +62,12 @@ export function calculateIntegrity(file) {
   return `sha512-${createHash('sha512').update(readFileSync(file)).digest('base64')}`
 }
 
+export function validateChangelog(changelog, expectedVersion) {
+  const escapedVersion = expectedVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const heading = new RegExp(`^## \\[${escapedVersion}\\] - \\d{4}-\\d{2}-\\d{2}$`, 'm')
+  if (!heading.test(changelog)) fail(`CHANGELOG.md 缺少 ${expectedVersion} 的日期标题`)
+}
+
 export function validatePackReport(raw, expectedName, expectedVersion) {
   let report
   try {
@@ -91,6 +97,7 @@ export function validatePackReport(raw, expectedName, expectedVersion) {
     'README.md',
     'README.en.md',
     'ASSETS.md',
+    'CHANGELOG.md',
     'EMOJI_KEYS.md',
     'LICENSE',
   ]
@@ -132,6 +139,7 @@ export function main(argv = process.argv.slice(2)) {
   if (packageJson.private !== undefined) fail('发布包不能声明 private')
   if (packageJson.publishConfig?.access !== 'public') fail('publishConfig.access 必须是 public')
   if (packageJson.publishConfig?.registry !== NPM_REGISTRY) fail(`publishConfig.registry 必须是 ${NPM_REGISTRY}`)
+  validateChangelog(readFileSync(join(root, 'CHANGELOG.md'), 'utf8'), packageJson.version)
 
   const head = run('git', ['rev-parse', 'HEAD'], { capture: true })
   assertClean('校验前')

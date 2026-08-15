@@ -14,6 +14,10 @@ npm run release:check
 
 CI 在 `main` push 和 pull request 上执行同一检查。发布 workflow 还会要求构建后工作区没有差异，保证提交的 `lib/` 与源码一致。
 
+## 人工审阅关卡
+
+发版准备直接在 `main` 上进行。更新版本号、lockfile、README 安装示例和 `CHANGELOG.md` 后先停止，不创建提交、不推送、不打 tag；用户审阅并明确确认继续后，保留其在审阅期间所做的修改，再完成 release commit 和余下发布流程。
+
 ## GitHub → npm 自动化契约
 
 发布 workflow 由 `v*` tag 触发，并满足以下要求：
@@ -32,6 +36,7 @@ npm Trusted Publisher 绑定仓库 `hellodigua/dsh-emoji` 和 workflow 文件名
 
 - `main` 包含完整源码、测试和最新 `lib/`。
 - `package.json` 版本为 `0.2.0`，包名为 `dsh-emoji`。
+- `CHANGELOG.md` 已记录并经人工审阅确认 `0.2.0`。
 - npm Trusted Publisher 已配置完成。
 - `npm run release:check` 与 GitHub CI 均通过。
 
