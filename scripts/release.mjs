@@ -30,9 +30,8 @@ function commandResult(command, args, { capture = false, env } = {}) {
 }
 
 function npmResult(args, options = {}) {
-  const npmExecPath = process.env.npm_execpath
-  if (!npmExecPath) fail('请通过 npm run release:check 启动发布校验')
-  return commandResult(process.execPath, [npmExecPath, ...args], options)
+  // `npm_execpath` 会指向启动 package script 的包管理器；通过 pnpm 运行时不能用它执行 npm 专属参数。
+  return commandResult('npm', args, options)
 }
 
 function run(command, args, options = {}) {

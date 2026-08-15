@@ -69,6 +69,15 @@ describe('release helpers', () => {
     expect(workflow).toContain('gh release create "${RELEASE_ARGS[@]}"')
   })
 
+  it('通过 npm 执行打包，不复用启动脚本的 pnpm 路径', () => {
+    const releaseScript = readFileSync(
+      new URL('../scripts/release.mjs', import.meta.url),
+      'utf8',
+    )
+    expect(releaseScript).toContain("return commandResult('npm', args, options)")
+    expect(releaseScript).not.toContain('process.env.npm_execpath')
+  })
+
   it('校验发布包身份、运行时文件、素材数量和发布体积', () => {
     const report = validatePackReport(packReport(), 'dsh-emoji', '0.2.2-beta.1')
     expect(report.filename).toBe('dsh-emoji-0.2.2-beta.1.tgz')
