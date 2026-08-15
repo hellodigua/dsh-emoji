@@ -55,7 +55,6 @@
     "build": "pnpm run clean && tsc -p tsconfig.json --emitDeclarationOnly && tsdown",
     "clean": "node scripts/clean.mjs",
     "prepack": "pnpm run build",
-    "release": "node scripts/release.mjs",
     "release:check": "node scripts/release.mjs --dry-run",
     "slice:deepseek": "python3 scripts/slice-deepseek-sheet.py",
     "sync:bilibili": "node scripts/sync-bilibili-assets.mjs",
