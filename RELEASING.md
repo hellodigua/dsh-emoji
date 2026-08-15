@@ -1,35 +1,40 @@
 # 发布 dsh-emoji
 
-`npm run release` 是维护者的唯一正式发布入口。它从 `package.json` 读取版本，依次完成：
+`dsh-emoji` 使用 GitHub tag 驱动 npm Trusted Publishing。仓库负责提供可重复验证的 npm 包；发布 workflow 负责校验 tag、执行 `npm publish --provenance`，并在发布成功后创建 GitHub Release。
 
-1. 检查 `main`、个人仓库 `origin` 和干净工作区。
-2. 运行 typecheck、测试、构建和 diff check。
-3. 生成并检查 npm tarball，确认 Host、Client、文档和 40 张内置表情齐全，且不包含源码、测试或开发素材。
-4. 确认 npm 身份、包归属和同版本内容，原子推送 `main` 与 `v<version>` annotated tag。
-5. 发布已校验的 tarball，并用 registry integrity 复核发布结果。
+## 本地与 CI 校验
 
-## 首次发布 0.2.0
-
-先确认 npm CLI 登录的是启用 2FA 且有发布权限的个人账号 `hellodigua`：
-
-```sh
-npm whoami --registry https://registry.npmjs.org/
-```
-
-正式发布前可以执行无网络写操作的完整演练：
+安装依赖后执行：
 
 ```sh
 npm run release:check
 ```
 
-确认后执行：
+该命令会完成类型检查、测试、构建和 `git diff --check`，再在系统临时目录生成 npm tarball，确认包名、版本、体积、Host、Client、文档、许可证和 40 张内置表情齐全，同时拒绝把源码、测试、脚本或 Bilibili 开发素材装入发布包。它不会创建 tag、推送代码或发布 npm。
 
-```sh
-npm run release
-```
+CI 在 `main` push 和 pull request 上执行同一检查。发布 workflow 还会要求构建后工作区没有差异，保证提交的 `lib/` 与源码一致。
 
-若 npm 发布阶段失败，已经推送的版本 tag 会保留；修复认证后重新运行同一命令即可继续。脚本会确认 tag 仍指向同一提交，并拒绝覆盖 npm 中已有的不同内容。
+## GitHub → npm 自动化契约
 
-## 后续版本
+发布 workflow 由 `v*` tag 触发，并满足以下要求：
 
-先修改 `package.json` 的版本并提交全部源码与构建产物，再运行同一发布命令。npm 版本不可覆盖；如需修复已发布版本，必须提升版本号。
+1. checkout 使用完整 Git 历史，Node 使用项目 `engines` 支持的版本。
+2. job 只授予 `contents: write` 与 `id-token: write`；npm 通过 Trusted Publisher 的 OIDC 身份发布，不保存长期 npm token。
+3. 只发布 `main` 历史上的提交；使用 frozen lockfile 安装依赖，执行 `npm run release:check`，并确认 tag 中的版本与 `package.json` 完全一致。
+4. 校验通过后生成一次 tarball，使用 `npm publish <tarball> --provenance` 发布，并把同一文件附加到 GitHub Release，保证两处产物一致。
+5. npm 发布成功后创建 GitHub Release。
+
+npm Trusted Publisher 绑定仓库 `hellodigua/dsh-emoji` 和 workflow 文件名 `release.yml`，不使用 GitHub Environment。
+
+## 发布 0.2.0
+
+发布前确认：
+
+- `main` 包含完整源码、测试和最新 `lib/`。
+- `package.json` 版本为 `0.2.0`，包名为 `dsh-emoji`。
+- npm Trusted Publisher 已配置完成。
+- `npm run release:check` 与 GitHub CI 均通过。
+
+然后为待发布的 `main` 提交创建 annotated tag `v0.2.0` 并推送。不要复用或移动已经发布的版本 tag；npm 版本不可覆盖，修复发布内容时必须提升版本号。
+
+如果 npm 发布成功但 GitHub Release 创建失败，只补建相同 tag 的 GitHub Release，不得重新发布或覆盖 npm 内容。

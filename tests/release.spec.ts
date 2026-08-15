@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { calculateIntegrity, normalizeRemoteUrl, validatePackReport } from '../scripts/release.mjs'
+import { calculateIntegrity, validatePackReport } from '../scripts/release.mjs'
 
 const temporaryDirectories: string[] = []
 
@@ -31,10 +31,22 @@ function packReport(overrides: Record<string, unknown> = {}) {
 }
 
 describe('release helpers', () => {
-  it('把 SSH 与 HTTPS origin 统一为个人仓库地址', () => {
-    expect(normalizeRemoteUrl('git@github.com:hellodigua/dsh-emoji.git')).toBe('https://github.com/hellodigua/dsh-emoji')
-    expect(normalizeRemoteUrl('ssh://git@github.com/hellodigua/dsh-emoji.git')).toBe('https://github.com/hellodigua/dsh-emoji')
-    expect(normalizeRemoteUrl('https://github.com/hellodigua/dsh-emoji.git')).toBe('https://github.com/hellodigua/dsh-emoji')
+  it('由版本 tag 自动发布 npm 包并创建 GitHub Release', () => {
+    const workflow = readFileSync(
+      new URL('../.github/workflows/release.yml', import.meta.url),
+      'utf8',
+    )
+
+    expect(workflow).toMatch(/push:\n\s+tags:\n\s+- 'v\*'/)
+    expect(workflow).toContain('contents: write')
+    expect(workflow).toContain('id-token: write')
+    expect(workflow).toContain('pnpm install --frozen-lockfile')
+    expect(workflow).toContain('npm run release:check')
+    expect(workflow).toContain('git diff --exit-code')
+    expect(workflow).toContain('GITHUB_REF_NAME#v')
+    expect(workflow).toContain('git merge-base --is-ancestor "$GITHUB_SHA" origin/main')
+    expect(workflow).toContain('npm publish "$TARBALL" --provenance --access public')
+    expect(workflow).toContain('gh release create "$GITHUB_REF_NAME" "$TARBALL"')
   })
 
   it('校验发布包身份、运行时文件、素材数量和发布体积', () => {

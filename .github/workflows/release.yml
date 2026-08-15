@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - name: 校验版本
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$TAG_VERSION" != "$PACKAGE_VERSION" ]]; then
+            echo "Tag version $TAG_VERSION does not match package.json version $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Tagged commit $GITHUB_SHA is not part of main" >&2
+            exit 1
+          fi
+      - run: pnpm install --frozen-lockfile
+      - run: npm run release:check
+      - run: git diff --exit-code
+      - name: 生成发布包
+        id: package
+        run: |
+          TARBALL="$(npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP")"
+          echo "path=$RUNNER_TEMP/$TARBALL" >> "$GITHUB_OUTPUT"
+      - name: 发布到 npm
+        run: npm publish "$TARBALL" --provenance --access public
+        env:
+          TARBALL: ${{ steps.package.outputs.path }}
+      - name: 创建 GitHub Release
+        run: >-
+          gh release create "$GITHUB_REF_NAME" "$TARBALL"
+          --verify-tag
+          --title "$GITHUB_REF_NAME"
+          --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARBALL: ${{ steps.package.outputs.path }}

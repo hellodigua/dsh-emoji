@@ -15,7 +15,7 @@ describe('Profile Bundle package', () => {
     expect(packageJson.dependencies.pngjs).toBe('7.0.0')
   })
 
-  it('声明个人仓库元数据和受校验的一键公开发布入口', () => {
+  it('声明个人仓库元数据和受校验的 Trusted Publishing 入口', () => {
     expect(packageJson.repository).toEqual({
       type: 'git',
       url: 'git+https://github.com/hellodigua/dsh-emoji.git',
@@ -28,7 +28,7 @@ describe('Profile Bundle package', () => {
       registry: 'https://registry.npmjs.org/',
     })
     expect(packageJson.scripts.prepack).toBe('pnpm run build')
-    expect(packageJson.scripts.release).toBe('node scripts/release.mjs')
+    expect(packageJson.scripts).not.toHaveProperty('release')
     expect(packageJson.scripts['release:check']).toBe('node scripts/release.mjs --dry-run')
   })
 
