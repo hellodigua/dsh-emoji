@@ -39,7 +39,7 @@
 - `src/client/EmojiSettingsCard.tsx`：插件配置卡片。
 - `src/client/settings-controller.ts`：设置页状态、revision 与网络竞态控制。
 - `scripts/release.mjs`：供本地与 CI 使用的纯校验入口，负责构建、检查干净工作区和验证 npm tarball 边界，不执行网络写操作。
-- `.github/workflows/release.yml`：校验版本 tag 与 `main` 历史，通过 npm Trusted Publisher 发布同一份 tarball，并创建 GitHub Release。
+- `.github/workflows/release.yml`：拒绝 lightweight tag，校验 annotated tag 的版本与 `main` 历史，通过 npm Trusted Publisher 发布同一份 tarball，并创建 GitHub Release。
 - `scripts/slice-deepseek-sheet.py`、`assets/emoji/deepseek/`：确定性切片工具与运行时素材。
 - `src/catalog.generated.ts`、`assets/emoji/bilibili/`：不进入运行时和发布包的素材生成参考。
 - `tests/`：catalog、检索、标签流、路由、Client 生命周期、设置和包结构验证。
