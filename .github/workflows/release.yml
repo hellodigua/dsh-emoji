@@ -29,7 +29,12 @@ jobs:
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          TAG_TYPE="$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")"
+          TAG_REF="refs/tags/$GITHUB_REF_NAME"
+          git fetch --force origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "$TAG_REF:$TAG_REF"
+          TAG_TYPE="$(git cat-file -t "$TAG_REF")"
+          TAG_COMMIT="$(git rev-parse "$TAG_REF^{}")"
           if [[ "$TAG_TYPE" != "tag" ]]; then
             echo "Release tag $GITHUB_REF_NAME must be an annotated tag" >&2
             exit 1
@@ -38,8 +43,8 @@ jobs:
             echo "Tag version $TAG_VERSION does not match package.json version $PACKAGE_VERSION" >&2
             exit 1
           fi
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-            echo "Tagged commit $GITHUB_SHA is not part of main" >&2
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "Tagged commit $TAG_COMMIT is not part of main" >&2
             exit 1
           fi
       - run: pnpm install --frozen-lockfile

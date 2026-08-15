@@ -1,6 +1,6 @@
 {
   "name": "dsh-emoji",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Tiny semantic inline emoji for DSH Agent responses",
   "keywords": [
