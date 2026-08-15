@@ -2,26 +2,40 @@
 
 ## 目标
 
-项目以公共无 scope 包 `dsh-emoji` 从个人仓库 `hellodigua/dsh-emoji` 发行。正式发布只有 `npm run release` 一个入口；普通校验和 CI 使用无网络写操作的 `npm run release:check`。
+项目以公共无 scope 包 `dsh-emoji` 从个人仓库 `hellodigua/dsh-emoji` 发行。本地和 CI 使用无网络写操作的 `npm run release:check` 验证交付物；正式发布由 `main` 历史上的 `v*` tag 触发 `.github/workflows/release.yml`，通过 npm Trusted Publisher 的 OIDC 身份完成。
 
-## 发布链路
+## 本地与 CI 校验
 
-`scripts/release.mjs` 从 `package.json` 读取版本，并固定校验包名、干净工作区和公开发布配置；真实发布还要求 `main` 分支以及个人仓库 origin 的 fetch URL 和全部 push URL，dry-run 可在 CI 的 detached HEAD 或贡献者 fork 中执行。npm 子命令通过当前 `npm run` 注入的 CLI 入口交给 Node 执行，不依赖 Windows 对 `.cmd` 的直接启动行为。随后运行 typecheck、测试、构建与 diff check，在系统临时目录生成 tarball，并校验 Host、Client、两份公开类型入口、40 张内置 PNG、体积上限和开发文件排除规则。
+`scripts/release.mjs` 从 `package.json` 读取版本，并固定校验包名、作者、MIT 协议、个人仓库地址、稳定版 SemVer 和公开 registry 配置。随后要求工作区干净，依次运行 typecheck、测试、构建与 `git diff --check`。
 
-真实发布固定使用公共 `https://registry.npmjs.org/`，先查询目标版本和包维护者。每次真实运行都要求当前 npm 身份与固定个人账号 `hellodigua` 完全一致；若包名已存在，维护者列表也必须包含该账号。身份和归属检查发生在 Git 写操作之前。随后同步远端，预检本地与远端版本 tag 的提交、类型和 tag object，再用 GitHub 支持的 atomic push 一次提交 `main` 与 annotated `v<version>` tag，最后发布已经校验的 tarball。若同版本已经存在，只有 registry integrity 与本地 tarball 完全一致才视为可重跑成功；不同内容始终拒绝覆盖。
+构建完成后，脚本在系统临时目录执行禁用生命周期脚本的 `npm pack`，并使用独立临时 npm cache。tarball 必须包含 Host、Client、两份公开类型入口、文档、许可证和 40 张内置 PNG，体积不得超过 6 MiB；源码、测试、脚本、GitHub 配置、`.docs` 和 Bilibili 开发素材均不得进入发布包。校验结束后临时文件会被清理，整个命令不会推送 Git、创建 tag 或发布 npm。
 
-## 失败与重跑
+`.github/workflows/ci.yml` 在 `main` push 和 pull request 上安装 frozen lockfile，并执行同一套 `npm run release:check`。
 
-- `npm whoami` 或现有包归属校验失败时尚未发生 Git 写入；npm publish 阶段的 2FA 或权限错误则可能发生在 tag 推送之后。
-- 修复认证后可重跑同一命令。已有 tag 必须仍指向当前 HEAD。
-- 已有版本 tag 必须是 annotated tag；同名 lightweight tag 会在发布前被拒绝。
-- npm 发布成功但本地未取得最终查询结果时也可重跑；integrity 一致即完成，避免重复发布。
-- 远端 `main` 领先、校验期间本地 HEAD 变化、tag 指向其他提交、工作区不干净、构建改写已提交产物或 tarball 内容越界都会在不可逆发布前终止。Git push 使用最初校验的 commit id，并把 branch 与 tag 放在同一次 atomic push 中；任一远端引用发生竞态时两者都不会更新。
+## GitHub → npm 发布链路
+
+`.github/workflows/release.yml` 由 `v*` tag 触发，使用完整 Git 历史并执行以下步骤：
+
+1. 从 tag 解析版本，要求它与 `package.json` 完全一致。
+2. 要求 tagged commit 属于 `origin/main` 历史，拒绝从其他分支发布。
+3. 使用 frozen lockfile 安装依赖，运行 `npm run release:check`，并确认构建后没有 Git 差异。
+4. 生成一次禁用生命周期脚本的 tarball，通过 `npm publish <tarball> --provenance --access public` 发布。
+5. 使用同一份 tarball 创建对应 tag 的 GitHub Release。
+
+workflow job 只授予 `contents: write` 和 `id-token: write`。npm Trusted Publisher 绑定仓库 `hellodigua/dsh-emoji`、workflow 文件名 `release.yml`，不使用 GitHub Environment，也不保存长期 npm token。
+
+## 失败与恢复
+
+- tag 版本不匹配、tagged commit 不属于 `main`、锁文件漂移、测试失败、构建改写已提交产物或 tarball 越界时，workflow 会在 npm 发布前终止。
+- npm 发布前发生临时性 Actions 或 registry 故障时，可以重跑同一 workflow；不得移动或复用已经公开的版本 tag。
+- tagged commit 本身需要修改时，在 `main` 修复并提升版本号，再创建新的 annotated tag；npm 版本不可覆盖。
+- npm 发布成功但 GitHub Release 创建失败时，只为现有 tag 补建 GitHub Release，不得重新发布 npm 包。
 
 ## 关键文件与验证
 
-- `package.json`：公共包元数据、`prepack`、`release` 和 `release:check`。
-- `scripts/release.mjs`：发布状态机和 tarball 边界。
-- `tests/release.spec.ts`、`tests/package.spec.ts`：发布辅助逻辑、元数据与统一包名。
-- `.github/workflows/ci.yml`：在 push 和 pull request 上安装 frozen lockfile 并执行完整 release dry-run。
-- `RELEASING.md`：维护者实际命令和恢复入口。
+- `package.json`：公共包元数据、`prepack` 和 `release:check`。
+- `scripts/release.mjs`：本地与 CI 的纯校验逻辑和 tarball 边界。
+- `tests/release.spec.ts`、`tests/package.spec.ts`：workflow 契约、发布辅助逻辑、元数据与统一包名。
+- `.github/workflows/ci.yml`：持续集成校验。
+- `.github/workflows/release.yml`：tag、OIDC npm 发布和 GitHub Release。
+- `RELEASING.md`：维护者命令和正式发布步骤。

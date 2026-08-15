@@ -45,7 +45,8 @@ python3 scripts/slice-deepseek-sheet.py \
 - `tests/client.spec.ts`、`tests/settings.spec.ts`：Web 样式、完整双语字典、错误码收敛与设置交互。
 - `tests/packs.spec.ts`：官方 DSH Home 路径规则、keySet 上传校验与旧内部 manifest 兼容、ZIP、图片、路径、体积、不可变安装、软移除、重启与磁盘 manifest 安全。
 - `tests/package.spec.ts`：Profile Bundle、发布白名单，以及 `EMOJI_KEYS.md` 的 40 个 key 与运行时 catalog 一致性。
-- `scripts/release.mjs` 与 `tests/release.spec.ts`：公共无 scope 包的构建、tarball、main/tag/npm 发布顺序、完整性校验和可重跑边界。
+- `scripts/release.mjs` 与 `tests/release.spec.ts`：公共无 scope 包的构建、干净工作区、tarball 内容和完整性校验边界。
+- `.github/workflows/release.yml`：校验 tag 版本和 `main` 历史，通过 npm Trusted Publisher 发布 tarball，并把同一文件附加到 GitHub Release。
 
 完整交付检查：`npm run release:check`；它包含 typecheck、测试、构建、`npm pack`、tarball 内容校验和 `git diff --check`，但不执行任何网络写操作。
 
