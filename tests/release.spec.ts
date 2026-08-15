@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { calculateIntegrity, validateChangelog, validatePackReport, validateReleaseVersion } from '../scripts/release.mjs'
 
 const temporaryDirectories: string[] = []
+const FIXTURE_VERSION = '1.2.3-beta.1'
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -21,8 +22,8 @@ function packReport(overrides: Record<string, unknown> = {}) {
   ].map(path => ({ path, size: 1, mode: 0o644 }))
   return JSON.stringify([{
     name: 'dsh-emoji',
-    version: '0.2.2-beta.1',
-    filename: 'dsh-emoji-0.2.2-beta.1.tgz',
+    version: FIXTURE_VERSION,
+    filename: `dsh-emoji-${FIXTURE_VERSION}.tgz`,
     size: 1024,
     unpackedSize: 2048,
     files,
@@ -32,16 +33,16 @@ function packReport(overrides: Record<string, unknown> = {}) {
 
 describe('release helpers', () => {
   it('要求 changelog 包含当前版本和发布日期', () => {
-    expect(() => validateChangelog('## [0.2.2-beta.1] - 2026-08-15\n', '0.2.2-beta.1')).not.toThrow()
-    expect(() => validateChangelog('## [0.2.1] - 2026-08-15\n', '0.2.2-beta.1')).toThrow(
-      'CHANGELOG.md 缺少 0.2.2-beta.1 的日期标题',
+    expect(() => validateChangelog(`## [${FIXTURE_VERSION}] - 2026-08-15\n`, FIXTURE_VERSION)).not.toThrow()
+    expect(() => validateChangelog('## [0.1.0] - 2026-08-15\n', FIXTURE_VERSION)).toThrow(
+      `CHANGELOG.md 缺少 ${FIXTURE_VERSION} 的日期标题`,
     )
   })
 
   it('接受稳定版和规范的预发布 SemVer', () => {
-    expect(() => validateReleaseVersion('0.2.2')).not.toThrow()
-    expect(() => validateReleaseVersion('0.2.2-beta.1')).not.toThrow()
-    expect(() => validateReleaseVersion('0.2.2-01')).toThrow('版本号不是可发布 SemVer')
+    expect(() => validateReleaseVersion('1.2.3')).not.toThrow()
+    expect(() => validateReleaseVersion(FIXTURE_VERSION)).not.toThrow()
+    expect(() => validateReleaseVersion('1.2.3-01')).toThrow('版本号不是可发布 SemVer')
   })
 
   it('由版本 tag 自动发布 npm 包并创建 GitHub Release', () => {
@@ -79,17 +80,17 @@ describe('release helpers', () => {
   })
 
   it('校验发布包身份、运行时文件、素材数量和发布体积', () => {
-    const report = validatePackReport(packReport(), 'dsh-emoji', '0.2.2-beta.1')
-    expect(report.filename).toBe('dsh-emoji-0.2.2-beta.1.tgz')
-    expect(validatePackReport(`build output\n${packReport()}`, 'dsh-emoji', '0.2.2-beta.1').filename).toBe('dsh-emoji-0.2.2-beta.1.tgz')
-    expect(() => validatePackReport(packReport({ name: 'other' }), 'dsh-emoji', '0.2.2-beta.1')).toThrow('tarball 身份不匹配')
-    expect(() => validatePackReport(packReport({ size: 7 * 1024 * 1024 }), 'dsh-emoji', '0.2.2-beta.1')).toThrow('tarball 文件名或体积异常')
+    const report = validatePackReport(packReport(), 'dsh-emoji', FIXTURE_VERSION)
+    expect(report.filename).toBe(`dsh-emoji-${FIXTURE_VERSION}.tgz`)
+    expect(validatePackReport(`build output\n${packReport()}`, 'dsh-emoji', FIXTURE_VERSION).filename).toBe(`dsh-emoji-${FIXTURE_VERSION}.tgz`)
+    expect(() => validatePackReport(packReport({ name: 'other' }), 'dsh-emoji', FIXTURE_VERSION)).toThrow('tarball 身份不匹配')
+    expect(() => validatePackReport(packReport({ size: 7 * 1024 * 1024 }), 'dsh-emoji', FIXTURE_VERSION)).toThrow('tarball 文件名或体积异常')
   })
 
   it('拒绝把源码或开发素材装入 npm tarball', () => {
     const report = JSON.parse(packReport())
     report[0].files.push({ path: 'src/index.ts', size: 1, mode: 0o644 })
-    expect(() => validatePackReport(JSON.stringify(report), 'dsh-emoji', '0.2.2-beta.1')).toThrow('tarball 不应包含 src/index.ts')
+    expect(() => validatePackReport(JSON.stringify(report), 'dsh-emoji', FIXTURE_VERSION)).toThrow('tarball 不应包含 src/index.ts')
   })
 
   it('计算与 npm registry 相同格式的 sha512 integrity', () => {

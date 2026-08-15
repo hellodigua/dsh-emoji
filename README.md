@@ -30,7 +30,7 @@
 dsh plugin --profile web add dsh-emoji
 ```
 
-如需固定当前版本，使用 `dsh-emoji@0.2.2-beta.1`。普通 `npm install dsh-emoji` 只会把包加入当前 Node.js 项目，不会启用 DSH 插件。
+如需体验预发布版本，将安装命令中的包名替换为 `dsh-emoji@beta`。普通 `npm install dsh-emoji` 只会把包加入当前 Node.js 项目，不会启用 DSH 插件。
 
 ## 工作方式
 

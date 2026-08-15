@@ -16,7 +16,7 @@ CI 在 `main` push 和 pull request 上执行同一检查。发布 workflow 还�
 
 ## 人工审阅关卡
 
-发版准备直接在 `main` 上进行。更新版本号、lockfile、README 安装示例和 `CHANGELOG.md` 后先停止，不创建提交、不推送、不打 tag；用户审阅并明确确认继续后，保留其在审阅期间所做的修改，再完成 release commit 和余下发布流程。
+发版准备直接在 `main` 上进行。默认只更新 `package.json` 和 `CHANGELOG.md`；lockfile 只在确实记录根包版本时更新，README 只在安装方式改变时更新。准备完成后先停止，不创建提交、不推送、不打 tag；用户审阅并明确确认继续后，保留其在审阅期间所做的修改，再完成 release commit 和余下发布流程。
 
 ## GitHub → npm 自动化契约
 
@@ -31,16 +31,16 @@ CI 在 `main` push 和 pull request 上执行同一检查。发布 workflow 还�
 
 npm Trusted Publisher 绑定仓库 `hellodigua/dsh-emoji` 和 workflow 文件名 `release.yml`，不使用 GitHub Environment。
 
-## 发布 0.2.2-beta.1
+## 发布版本
 
 发布前确认：
 
 - `main` 包含完整源码、测试和最新 `lib/`。
-- `package.json` 版本为 `0.2.2-beta.1`，包名为 `dsh-emoji`。
-- `CHANGELOG.md` 已记录并经人工审阅确认 `0.2.2-beta.1`。
+- `package.json` 中是本次要发布的 SemVer 版本，包名为 `dsh-emoji`。
+- `CHANGELOG.md` 已记录并经人工审阅确认该版本。
 - npm Trusted Publisher 已配置完成。
 - `npm run release:check` 与 GitHub CI 均通过。
 
-然后为待发布的 `main` 提交创建 annotated tag `v0.2.2-beta.1` 并推送。该版本发布到 npm `beta` dist-tag，并创建 GitHub prerelease。不要复用或移动已经发布的版本 tag；npm 版本不可覆盖，修复发布内容时必须提升版本号。
+然后为待发布的 `main` 提交创建与 `package.json` 版本完全一致的 annotated tag（格式为 `vX.Y.Z`，预发布版保留后缀）并推送。不要复用或移动已经发布的版本 tag；npm 版本不可覆盖，修复发布内容时必须提升版本号。
 
 如果 npm 发布成功但 GitHub Release 创建失败，只补建相同 tag 的 GitHub Release，不得重新发布或覆盖 npm 内容。

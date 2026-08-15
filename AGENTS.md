@@ -15,6 +15,6 @@
 
 ## 发版规则
 
-- 用户说“发版”时，直接在干净且与远端同步的 `main` 上按 SemVer 准备版本号、lockfile、README 和 `CHANGELOG.md`，然后停止并请用户审阅
+- 用户说“发版”时，直接在干净且与远端同步的 `main` 上按 SemVer 更新 `package.json` 和 `CHANGELOG.md`，然后停止并请用户审阅。
 - 用户说“继续”后，重新读取并保留其审阅修改，完成构建与检查，提交 `chore(release): vX.Y.Z`，运行 `pnpm release:check`，推送 `main` 并等待 CI。
 - CI 通过后创建并推送 annotated tag `vX.Y.Z`；workflow 只负责校验、发布同一 tarball 到 npm 并创建 GitHub Release，完成后核对版本和产物一致。
