@@ -57,6 +57,7 @@
 
 - [中文 README](../README.md) 是仓库默认入口；[English README](../README.en.md) 使用独立英文 Banner 与对话预览，两种语言互相链接。
 - [代码库摘要](codebase-summary.md)：运行时主链路、关键文件和验证入口。
+- [System Prompt 中文对照](prompt.md)：运行时英文提示词的中文核对稿、动态拼装顺序、模式差异和 marker 协议。
 - [表情频率配置](features/emoji-settings.md)：设置数据流、安全边界、动态生效语义与阶段限制。
 - [用户表情包](features/user-emoji-packs.md)：ZIP 契约、安装事务、历史 URL、软移除和并发边界。
 - [npm 发布](features/release.md)：无 scope 包名、tarball 边界、tag 驱动的 Trusted Publishing 和失败恢复语义。
@@ -65,9 +66,9 @@
 # 当前验证状态
 
 - DSH peers 使用 `^0.1.0-rc.6`；本地开发用精确 rc.6 devDependencies 固定类型检查和测试基线，部署由 Profile 提供共享 runtime。`dsh-api-gateway`、`dsh-invariants` 与 `dsh-typert-registry` 固定为同一 rc.6 类型身份。
-- 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 105 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界、Unicode emoji 保留、相邻 marker 与易误判反例。
+- 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 108 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界、Unicode emoji 保留、相邻 marker 与易误判反例。
 - 精确 `@deepseek-ai/dsh@0.1.0-rc.6` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- `auto` guidance 为 1,353 字符，`frequent` 为 1,334 字符；system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，内置文本不出现 `emoji` 单词，也不向模型暴露插件包名。提示只声明一次 `::<key>::` 模板，明确零张合法、一张通常足够、多张需要正文分隔，并将 marker 声明为唯一的非语言反应格式、禁止模型直接输出 Markdown 图片或素材 URL；作为字面正文内容的 Unicode 图形字符仍由转写器保持原文，40 个 `key=English/中文` 映射保持完整。模型是否遵循格式仍属于概率行为。
+- `auto` guidance 为 1,161 字符，`frequent` 为 1,142 字符；system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，内置文本不出现 `emoji` 单词，也不向模型暴露插件包名。提示只声明一次 `::<key>::` 模板，明确零张合法、一张通常足够，并保留代码、链接与正文内容边界；40 个 `key=English/中文` 映射保持完整。相邻 marker、模型直出的插件图片和作为字面正文的 Unicode 图形字符由转写器独立处理，不依赖提示词约束。模型是否遵循格式仍属于概率行为。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
 - 公共包名为 `dsh-emoji`；`npm run release:check` 是 CI 与本地演练入口，正式发布由 `main` 历史上的 `v*` tag 触发 `.github/workflows/release.yml`，并通过绑定 `hellodigua/dsh-emoji` 的 npm Trusted Publisher 完成。

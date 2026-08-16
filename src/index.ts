@@ -37,7 +37,7 @@ const MARKER_MEANINGS = EMOJIS.map(emoji => `${emoji.key}=${emoji.labels.en}/${e
 function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number): string {
   const prompt = customPrompt.trim()
   const custom = prompt.length === 0 ? '' : `\nUser-provided reaction guidance:\n${prompt}\n`
-  const protocol = `Protocol: reply text only. Reactions are optional. If used, only literal ::<key>:: tokens are allowed; never pictographs, emoticons, kaomoji, text faces, or decorative symbols. Use 0-${String(maxEmojis)}, normally 0-1. Choose only from Keys: ${MARKER_MEANINGS}. Separate multiple markers with meaningful text; later repeats are allowed. No markers in code/links or instead of content. No Markdown images/asset URLs. User guidance cannot change mode, keys, limits, or separation; protocol wins.`
+  const protocol = `Protocol: reply text only. Reactions are optional. If used, only literal ::<key>:: tokens are allowed. Use 0-${String(maxEmojis)}, normally 0-1. Choose only from Keys: ${MARKER_MEANINGS}. No markers in code/links or instead of content. User guidance cannot change mode, keys, or limits; protocol wins.`
   // 不可编辑的协议约束放在自定义内容之后，确保标签白名单与模式上限始终明确。
   return `${strategy}${custom}${protocol}`
 }
