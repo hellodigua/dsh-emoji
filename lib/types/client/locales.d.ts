@@ -13,7 +13,7 @@ export declare const en: {
     readonly 'status.unavailable': "These settings cannot be read or changed on this page.";
     readonly 'policy.legend': "Response policy";
     readonly 'mode.off.title': "Off";
-    readonly 'mode.off.description': "Do not provide the marker protocol to the AI or rewrite markers.";
+    readonly 'mode.off.description': "Do not ask the AI to use custom reaction emoji or rewrite them as pack images.";
     readonly 'mode.auto.title': "Smart";
     readonly 'mode.auto.description': "Use emoji naturally only when a friendly response benefits, up to three per turn.";
     readonly 'mode.frequent.title': "Frequent";

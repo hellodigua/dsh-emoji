@@ -24,8 +24,25 @@ dsh-emoji-core@1
 - **应该（SHOULD）**：遵守绘制提示和相近语义边界，使 AI 选择不同 key 时，用户能看出区别。
 - **可以（MAY）**：自由选择角色、画风、配色、构图和文化表达；不需要模仿内置“大肥鱼”。
 - key 是机器协议，不翻译、不改名，也不把作品角色名写入 key。
-- AI 使用双冒号包围 key 选择表情，例如 `happy` 对应 `::happy::`；表情包只实现 key 与图片，不自定义 marker 格式。
+- AI 直接使用受控 Unicode 表情选择语义，例如 `😊` 对应内部 key `happy`；表情包只实现 key 与图片，不能自定义 Unicode 映射。插件还接受 `😄→laughing`、`🙂→happy` 两个常见输入别名，它们不新增素材 key。
 - `dsh-emoji-core@1` 中现有 key 的含义不会被静默改变。若未来发生不兼容的增删或重定义，将发布新的 `keySet` 主版本。
+
+## AI Unicode 映射
+
+下列 40 项规范映射由插件固定。插件另接受 `😄→laughing` 与 `🙂→happy` 两个明确别名；其他 Unicode 表情保持原样，Host 不根据相似度或上下文猜测 key。
+
+```text
+😊→happy        😢→sad          😕→confused     👀→watching
+😠→angry        😑→speechless   😉→doge         😵‍💫→overloaded
+😐→neutral      😆→laughing     😭→crying       😅→sweating
+🤔→thinking     👌→okay         🙂‍↕️→nodding       😴→sleeping
+🥺→hurt         🫣→peeking      👍→approve      🫶→heart
+😳→shy          🤩→star-eyes    😂→laugh-cry    🥹→touched
+😱→scared       🤦→facepalm     🙄→eye-roll     😮‍💨→sigh
+😫→frustrated   😜→playful      🤭→snickering   😏→sarcastic
+😎→cool         🎉→celebrate    💪→cheer        🙏→thanks
+🙇→sorry        🤗→hug          🤲→please       👏→applause
+```
 
 ## 通用绘制要求
 
