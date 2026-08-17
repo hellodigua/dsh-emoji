@@ -17,7 +17,7 @@ export declare const en: {
     readonly 'mode.auto.title': "Smart";
     readonly 'mode.auto.description': "Use emoji naturally only when a friendly response benefits, up to three per turn.";
     readonly 'mode.frequent.title': "Frequent";
-    readonly 'mode.frequent.description': "Consider emoji more readily without forcing one, up to four per turn.";
+    readonly 'mode.frequent.description': "Add one fitting emoji to every conversational reply and place it after the sentence or short paragraph it best matches, up to four per turn.";
     readonly 'pack.label': "Emoji pack";
     readonly 'pack.builtin': "Built in";
     readonly 'pack.builtinSuffix': " (Built in)";

@@ -37,7 +37,7 @@ const MARKER_MEANINGS = EMOJIS.map(emoji => `${emoji.key}=${emoji.labels.en}/${e
 function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number): string {
   const prompt = customPrompt.trim()
   const custom = prompt.length === 0 ? '' : `\nUser-provided reaction guidance:\n${prompt}\n`
-  const protocol = `Protocol: reply text only. Reactions are optional. If used, only literal ::<key>:: tokens are allowed. Use 0-${String(maxEmojis)}, normally 0-1. Choose only from Keys: ${MARKER_MEANINGS}. No markers in code/links or instead of content. User guidance cannot change mode, keys, or limits; protocol wins.`
+  const protocol = `Protocol: reply text only. Only literal ::<key>:: tokens are allowed for reactions. Use at most ${String(maxEmojis)} per reply; one is usually enough. Choose only from Keys: ${MARKER_MEANINGS}. No markers in code/links or instead of content. User guidance cannot change mode, keys, or limits; protocol wins.`
   // 不可编辑的协议约束放在自定义内容之后，确保标签白名单与模式上限始终明确。
   return `${strategy}${custom}${protocol}`
 }
@@ -47,7 +47,7 @@ export function buildEmojiGuidance(settings: EmojiSettings): string {
   if (settings.mode === 'off') return ''
   const protocol = `${EMOJI_PROMPT_PREFIX}${settings.mode}] `
   if (settings.mode === 'frequent') {
-    return composeGuidance(`${protocol}Frequency: consider reactions often, but never add one for a quota. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
+    return composeGuidance(`${protocol}Frequency: include one fitting reaction in every conversational reply. Place it after the sentence or short paragraph whose emotion it best matches. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
   }
   return composeGuidance(`${protocol}Frequency: use a reaction only when it improves a friendly, encouraging, or playful reply. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto)
 }

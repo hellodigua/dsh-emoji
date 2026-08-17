@@ -20,7 +20,7 @@
 - `dsh-emoji` Settings 命名空间持久化配置；loopback-only 自有 RPC 只读写本插件命名空间。
 - Host RPC 返回稳定错误码与英文 canonical message；Client controller 把错误收敛为有限状态，设置卡片再按当前 DSH locale 显示。
 - system prompt 随设置实时更新；请求内的模式标记决定该次流是否转写。
-- 智能模式在程序层最多保留 3 张表情，高频模式最多保留 4 张；两种模式都允许零张且一张通常足够，多张之间必须存在有效正文。提示协议要求模型把情绪或装饰性反应写成 marker，作为正文内容的 Unicode emoji 仍保持原文；相同 key 可以在正文不同位置重复。
+- 智能模式允许零张且在程序层最多保留 3 张表情；高频模式要求所有对话回复都加入一个匹配情绪的表情，程序最多保留 4 张。一张通常足够，多张之间必须存在有效正文。提示协议要求模型把反应写成 marker，作为正文内容的 Unicode emoji 仍保持原文；相同 key 可以在正文不同位置重复。
 - 切片脚本按 SHA-256 识别当前 `8×5` 正面鲸鱼完整版总览图，共维护 40 张 `128×128 RGBA PNG`。
 - Profile Bundle 同时装配 Host half 与 Web Client half。
 - 当前插件只面向 DSH `^0.1.0-rc.7`：Web 配置卡片按 Settings namespace 接入 `dsh-client-ui-settings-plugins` 的 keyed slot，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`；不保留旧版 slot 兼容层。
@@ -49,7 +49,7 @@
 - 运行时不得读取用户下载目录或兄弟素材仓库。
 - 样式不得命中普通图片或 `dsh-meme` 图片。
 - 设置 RPC 只允许 loopback，并且不得放宽 DSH core 的通用设置白名单。
-- `auto` 与 `frequent` 的触发频率仍由模型选择，插件不会因漏标签自动补图。
+- `auto` 的触发时机以及 `frequent` 的强制频率仍依赖模型遵循提示词，插件不会因漏标签自动补图。
 - 用户定义的表情偏好、插入位置和跳过场景依赖模型遵循提示词；程序只负责合法 marker、Markdown 边界和分档数量上限。
 - 内置素材由维护者确认可随 `dsh-emoji` 分发，但不纳入 MIT，也不授予脱离本项目单独再分发的权利。
 
@@ -69,6 +69,6 @@
 - 在真实 rc.7 npm 类型与运行时包图上，typecheck、10 个测试文件共 109 项测试、build 和 pack dry-run 均通过；设置卡片覆盖 keyed slot namespace、官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界、Unicode emoji 保留、相邻 marker 与易误判反例。
 - 精确 `@deepseek-ai/dsh@0.1.0-rc.7` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
-- `auto` guidance 为 1,161 字符，`frequent` 为 1,142 字符；system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，内置文本不出现 `emoji` 单词，也不向模型暴露插件包名。提示只声明一次 `::<key>::` 模板，明确零张合法、一张通常足够，并保留代码、链接与正文内容边界；40 个 `key=English/中文` 映射保持完整。相邻 marker、模型直出的插件图片和作为字面正文的 Unicode 图形字符由转写器独立处理，不依赖提示词约束。模型是否遵循格式仍属于概率行为。
+- system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，内置文本不出现 `emoji` 单词，也不向模型暴露插件包名。提示只声明一次 `::<key>::` 模板；智能模式允许零张，高频模式要求所有对话回复都加入一个匹配反应，同时保留代码、链接、正文内容和分档数量上限。40 个 `key=English/中文` 映射保持完整。相邻 marker、模型直出的插件图片和作为字面正文的 Unicode 图形字符由转写器独立处理，不依赖提示词约束。模型是否遵循格式仍属于概率行为。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
 - 公共包名为 `dsh-emoji`；`npm run release:check` 是 CI 与本地演练入口，正式发布由 `main` 历史上的 `v*` tag 触发 `.github/workflows/release.yml`，并通过绑定 `hellodigua/dsh-emoji` 的 npm Trusted Publisher 完成。
