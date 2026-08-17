@@ -7,7 +7,7 @@
 - 语言：TypeScript、ESM、Node.js `^22.19.0 || >=24`；切片脚本使用 Python 与 Pillow。
 - 框架/库：Cordis、React、DSH llm/system-prompt/settings/connection/host-webserver、mdast CommonMark 解析器。
 - 构建与依赖管理：pnpm 11、TypeScript、tsdown
-- 测试：Vitest、JSDOM、npm 发布的 DSH 0.1.0-rc.6 集成验证
+- 测试：Vitest、JSDOM、npm 发布的 DSH 0.1.0-rc.7 集成验证
 
 # 关键功能
 
@@ -23,7 +23,7 @@
 - 智能模式在程序层最多保留 3 张表情，高频模式最多保留 4 张；两种模式都允许零张且一张通常足够，多张之间必须存在有效正文。提示协议要求模型把情绪或装饰性反应写成 marker，作为正文内容的 Unicode emoji 仍保持原文；相同 key 可以在正文不同位置重复。
 - 切片脚本按 SHA-256 识别当前 `8×5` 正面鲸鱼完整版总览图，共维护 40 张 `128×128 RGBA PNG`。
 - Profile Bundle 同时装配 Host half 与 Web Client half。
-- 当前插件只面向 DSH `^0.1.0-rc.6`：Web 配置卡片接入 `dsh-client-ui-settings-plugins`，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`；不保留 `0.0.1-rc.*` 兼容层。
+- 当前插件只面向 DSH `^0.1.0-rc.7`：Web 配置卡片按 Settings namespace 接入 `dsh-client-ui-settings-plugins` 的 keyed slot，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`；不保留旧版 slot 兼容层。
 
 # 目录结构
 
@@ -65,9 +65,9 @@
 
 # 当前验证状态
 
-- DSH peers 使用 `^0.1.0-rc.6`；本地开发用精确 rc.6 devDependencies 固定类型检查和测试基线，部署由 Profile 提供共享 runtime。`dsh-api-gateway`、`dsh-invariants` 与 `dsh-typert-registry` 固定为同一 rc.6 类型身份。
-- 在真实 rc.6 npm 类型与运行时包图上，typecheck、10 个测试文件共 108 项测试、build 和 pack dry-run 均通过；设置卡片覆盖官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界、Unicode emoji 保留、相邻 marker 与易误判反例。
-- 精确 `@deepseek-ai/dsh@0.1.0-rc.6` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
+- DSH peers 使用 `^0.1.0-rc.7`；本地开发用精确 rc.7 devDependencies 固定类型检查和测试基线，部署由 Profile 提供共享 runtime。`dsh-api-gateway`、`dsh-invariants` 与 `dsh-typert-registry` 固定为同一 rc.7 类型身份。
+- 在真实 rc.7 npm 类型与运行时包图上，typecheck、10 个测试文件共 109 项测试、build 和 pack dry-run 均通过；设置卡片覆盖 keyed slot namespace、官方折叠箭头、展开态、悬停态、键盘焦点样式和内置包技术标识隐藏规则，标签转写另覆盖 CommonMark 代码/链接边界、Unicode emoji 保留、相邻 marker 与易误判反例。
+- 精确 `@deepseek-ai/dsh@0.1.0-rc.7` Host 的 Boot、Client bundle、内置 PNG、浏览器样式挂载和控制台检查均通过。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
 - `auto` guidance 为 1,161 字符，`frequent` 为 1,142 字符；system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，内置文本不出现 `emoji` 单词，也不向模型暴露插件包名。提示只声明一次 `::<key>::` 模板，明确零张合法、一张通常足够，并保留代码、链接与正文内容边界；40 个 `key=English/中文` 映射保持完整。相邻 marker、模型直出的插件图片和作为字面正文的 Unicode 图形字符由转写器独立处理，不依赖提示词约束。模型是否遵循格式仍属于概率行为。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。

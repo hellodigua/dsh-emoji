@@ -95,7 +95,7 @@ sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 
 ## 兼容性
 
-当前版本面向 npm `@deepseek-ai/dsh@0.1.0-rc.6`，DSH peers 声明为 `^0.1.0-rc.6`。本地开发固定精确 rc.6 类型链，部署时由 Web Profile 提供共享运行时。
+当前版本面向 npm `@deepseek-ai/dsh@0.1.0-rc.7`，DSH peers 声明为 `^0.1.0-rc.7`。本地开发固定精确 rc.7 类型链，部署时由 Web Profile 提供共享运行时。
 
 ## 本地开发
 
