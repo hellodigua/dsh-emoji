@@ -184,8 +184,7 @@ export function apply(ctx: ClientContext): void {
 
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
-    id: 'dsh-emoji',
-    order: 30,
+    key: EMOJI_SETTINGS_NAMESPACE,
     locale: EMOJI_LOCALE_NS,
     inject: () => ({
       hooks: { emojiSettings: controller },

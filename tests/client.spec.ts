@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ClientConnectionRpc } from '@deepseek-ai/dsh-client-connection/client'
+import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 
 // 此文件验证插件自己的设置状态和样式；DSH primitives 的根入口还会加载
 // Markdown/KaTeX CSS，在 Node 测试环境中用最小组件替身隔离该平台资源。
@@ -9,11 +10,11 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
 }))
 
 import {
-  EMOJI_CSS, EMOJI_SELECTOR, EMOJI_SETTINGS_CARD_SELECTOR, EMOJI_STYLE_ID, EmojiSettingsController, emojiCss,
+  apply as applyClient, EMOJI_CSS, EMOJI_SELECTOR, EMOJI_SETTINGS_CARD_SELECTOR, EMOJI_STYLE_ID, EmojiSettingsController, emojiCss,
   installEmojiStyles, setEmojiDisplaySize,
 } from '../src/client/index.ts'
 import {
-  DEFAULT_CUSTOM_PROMPT, DEFAULT_EMOJI_SETTINGS, type EmojiSettingsDocument,
+  DEFAULT_CUSTOM_PROMPT, DEFAULT_EMOJI_SETTINGS, EMOJI_SETTINGS_NAMESPACE, type EmojiSettingsDocument,
 } from '../src/settings-model.ts'
 import { en as emojiEn, zh as emojiZh } from '../src/client/locales.ts'
 import { BUILTIN_PACK_REF, type EmojiPackSummary } from '../src/pack-model.ts'
@@ -45,6 +46,37 @@ afterEach(() => {
 })
 
 describe('Web Client inline style', () => {
+  it('按 Settings namespace 注册 rc.7 keyed slot', () => {
+    const register = vi.fn(() => vi.fn())
+    const rpc = {
+      call: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { settings: DEFAULT_EMOJI_SETTINGS, revision: 0, writable: true, packs: [BUILTIN_PACK] },
+      }),
+    }
+    const ctx = {
+      effect: vi.fn((setup: () => unknown) => { setup() }),
+      get: vi.fn(() => ({ rpc, isLoopback: true })),
+      locale: { register: vi.fn(() => vi.fn()) },
+      on: vi.fn(() => vi.fn()),
+      remote: { $on: vi.fn(() => vi.fn()) },
+      slots: {
+        inject: vi.fn((_name: string, setup: () => unknown) => { setup() }),
+        register,
+      },
+    }
+
+    applyClient(ctx as unknown as ClientContext)
+
+    expect(register).toHaveBeenCalledTimes(1)
+    expect(register.mock.calls[0]?.[0]).toMatchObject({
+      name: 'settings.plugin.item',
+      key: EMOJI_SETTINGS_NAMESPACE,
+    })
+    expect(register.mock.calls[0]?.[0]).not.toHaveProperty('id')
+    expect(register.mock.calls[0]?.[0]).not.toHaveProperty('order')
+  })
+
   it('设置卡片提供键集合完全一致的中英文文案', () => {
     expect(emojiZh.title).toBe('表情')
     expect(emojiEn.title).toBe('Whale Emoji')

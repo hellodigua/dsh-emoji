@@ -20,8 +20,8 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 数据流
 
-1. Host half 通过 DSH 0.1.0-rc.6 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
-2. Web Client 注入 `dsh-client-ui-settings-plugins`，并在其 `settings.plugin.item` 插槽注册配置卡片。
+1. Host half 通过 DSH 0.1.0-rc.7 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
+2. Web Client 注入 `dsh-client-ui-settings-plugins`，并以 `dsh-emoji` Settings namespace 作为 key，在其 keyed `settings.plugin.item` 插槽注册配置卡片。
 3. Client 通过 `/dsh-emoji-settings` 自有 Connection RPC 执行 `get`、`save`、`reset`、`pack-upload`、`pack-remove`；包操作细节见 [`user-emoji-packs.md`](user-emoji-packs.md)。
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。
 5. Host watcher 更新内存设置，并触发 `system-prompt/change`。
@@ -35,7 +35,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 卡片界面一致性
 
-`settings.plugin.item` 的 slot 要求插件拥有自己的卡片渲染，但外壳遵循 DSH 内置 `PluginCard` 的交互视觉：使用 `@deepseek-ai/dsh-client-ui-primitives` 的 `IconChevronDownOutline14`，展开时旋转 180 度，并具有相同的 hover 边框、展开态背景和 `:focus-visible` 焦点框。所有选择器均以 `data-dsh-emoji-settings-*` 或 `dsh-emoji-settings-*` 命名，只作用于本插件卡片。
+`settings.plugin.item` 是按 Settings namespace 分发的 keyed slot；本插件使用 `dsh-emoji` key，并拥有自己的卡片渲染。卡片外壳遵循 DSH 内置 `PluginCard` 的交互视觉：使用 `@deepseek-ai/dsh-client-ui-primitives` 的 `IconChevronDownOutline14`，展开时旋转 180 度，并具有相同的 hover 边框、展开态背景和 `:focus-visible` 焦点框。所有选择器均以 `data-dsh-emoji-settings-*` 或 `dsh-emoji-settings-*` 命名，只作用于本插件卡片。
 
 ## 安全边界
 
