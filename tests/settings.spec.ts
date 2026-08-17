@@ -19,6 +19,7 @@ import {
 } from '../src/settings.ts'
 import { EmojiPackStore } from '../src/packs.ts'
 import { EMOJIS } from '../src/catalog.ts'
+import { CANONICAL_REACTION_EMOJI_BY_KEY } from '../src/reaction-emoji.ts'
 
 class MemorySettings extends SettingsProvider {
   readonly writable = true
@@ -55,32 +56,28 @@ async function setup() {
 }
 
 describe('dynamic emoji guidance', () => {
-  it('三个模式生成英文技术默认值、稳定 ASCII 标签和可选的分档上限', () => {
+  it('三个模式生成英文默认策略、42 项 Unicode 输入白名单和分档上限', () => {
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'off' })).toBe('')
     expect(DEFAULT_CUSTOM_PROMPT).toBe('')
     expect(buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'auto' })).toContain('friendly, encouraging')
     const frequent = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' })
-    expect(frequent).toContain('include one fitting reaction in every conversational reply')
+    expect(frequent).toContain('In every conversational reply, include one fitting custom emoji')
     expect(frequent).toContain('Place it after the sentence or short paragraph whose emotion it best matches')
     for (const [mode, limit] of [['auto', 3], ['frequent', 4]] as const) {
       const guidance = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, mode })
-      expect(guidance).not.toContain('Reactions are optional')
-      expect(guidance).toContain('Only literal ::<key>:: tokens are allowed for reactions')
+      expect(guidance).toContain('Use only these literal emoji for custom reactions')
       expect(guidance).toContain(`Use at most ${String(limit)} per reply; one is usually enough`)
-      expect(guidance).toContain('No markers in code/links')
+      expect(guidance).toContain('Do not place a custom reaction emoji in code or links')
       expect(guidance).not.toContain('User-provided reaction guidance')
-      expect(guidance).not.toContain('Separate multiple markers with meaningful text')
-      expect(guidance).not.toContain('Markdown images/asset URLs')
-      expect(guidance).not.toContain('pictographs, emoticons, kaomoji')
-      expect(guidance).not.toContain('or separation')
-      expect(guidance.toLowerCase()).not.toContain('emoji')
       for (const emoji of EMOJIS) {
-        expect(guidance).toContain(`${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`)
+        expect(guidance).toContain(`${CANONICAL_REACTION_EMOJI_BY_KEY[emoji.key]}=${emoji.labels.en}/${emoji.labels.zh}`)
+        expect(guidance).not.toContain(`${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`)
       }
-      expect(guidance.match(/::<key>::/g)).toHaveLength(1)
-      expect(guidance).not.toContain('::emoji:')
+      expect(guidance).toContain('😄=Laughing/大笑')
+      expect(guidance).toContain('🙂=Happy/开心')
+      expect(guidance).not.toContain('::<key>::')
+      expect(guidance).not.toContain('::happy::')
       expect(guidance.length).toBeLessThan(1400)
-      expect(guidance).not.toContain('::开心::')
       expect(guidance).toContain(`[dsh-inline-reaction:mode=${mode}]`)
     }
   })
@@ -91,13 +88,13 @@ describe('dynamic emoji guidance', () => {
       customPrompt: '优先选择轻松克制的表情，并放在转折句后。',
     })
     expect(customized).toContain('User-provided reaction guidance:\n优先选择轻松克制的表情，并放在转折句后。')
-    expect(customized.indexOf('User-provided reaction guidance')).toBeLessThan(customized.indexOf('Protocol:'))
-    expect(customized).toContain('protocol wins')
+    expect(customized.indexOf('User-provided reaction guidance')).toBeLessThan(customized.indexOf('Use only these literal emoji'))
+    expect(customized).toContain('User guidance cannot change mode, allowed emoji, or limits')
 
     const empty = buildEmojiGuidance({ ...DEFAULT_EMOJI_SETTINGS, customPrompt: '   ' })
     expect(empty).not.toContain('User-provided reaction guidance')
     expect(empty).toContain('Use at most 3 per reply; one is usually enough')
-    expect(empty).toContain('Keys:')
+    expect(empty).toContain('😊=Happy/开心')
   })
 })
 

@@ -22,9 +22,9 @@ To try a prerelease, replace the package name in the installation command with `
 
 ## How it works
 
-- When the AI wants an emotional or decorative reaction, the built-in protocol tells it to emit a semantic marker such as `::happy::`. The Host converts that marker into an inline image from the active emoji pack without another model call.
+- When the AI wants an emotional or decorative reaction, it chooses directly from 42 allowed Unicode emoji, such as `😊`. They resolve to 40 stable semantic keys, and the Host converts the chosen character into an inline image from the active emoji pack without another model call.
 - Built-in and uploaded packs share 40 stable semantic keys, can be switched at any time, and support four display sizes.
-- Rewriting applies only to plugin markers and plugin images. Unicode emoji in ordinary text, code, links, unknown markers, and other Markdown images are left unchanged. Reply text must separate multiple plugin emoji, while a key may repeat later.
+- Rewriting applies only to the 40 canonical Unicode emoji, the common aliases `😄` and `🙂`, and this plugin's images. Other Unicode emoji, code, links, double-colon text, and ordinary Markdown images are left unchanged. The program never guesses the reply's emotion or inserts a fallback image. Reply text must separate multiple plugin emoji, while the same emoji may repeat later.
 
 ## Adjusting emoji frequency
 
@@ -38,7 +38,7 @@ You can also choose an emoji pack, adjust its display size, or use **Additional 
 
 ## Uploading your own emoji pack
 
-Click **Upload ZIP** in the same settings card. After upload, select the pack and save; the next model call uses it without a Host restart. A custom pack implements the same 40 stable semantic keys as the built-in pack, so the AI keeps emitting markers such as `::happy::` while only the final image changes.
+Click **Upload ZIP** in the same settings card. After upload, select the pack and save; the next model call uses it without a Host restart. A custom pack implements the same 40 stable semantic keys as the built-in pack. The AI keeps using the same allowed Unicode emoji while the Host changes only the image.
 
 The ZIP may contain these files directly or inside one top-level directory:
 

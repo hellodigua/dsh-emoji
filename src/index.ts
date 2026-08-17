@@ -13,8 +13,11 @@ import {
 } from './assets.ts'
 import { EMOJIS, type EmojiCatalogEntry } from './catalog.ts'
 import {
-  EMOJI_PROMPT_PREFIX, emojiMarker, emojiModeFromPrompt, rewriteEmojiStream,
-} from './markers.ts'
+  REACTION_PROMPT_PREFIX, reactionModeFromPrompt, rewriteReactionStream,
+} from './reactions.ts'
+import {
+  ACCEPTED_REACTION_EMOJIS,
+} from './reaction-emoji.ts'
 import {
   DEFAULT_EMOJI_SETTINGS,
   EMOJI_PER_TURN_LIMIT,
@@ -33,23 +36,25 @@ export const name = 'dsh-emoji'
 export const inject = ['llm', 'systemPrompt']
 export const Config = EmojiSettingsSchema
 
-const MARKER_MEANINGS = EMOJIS.map(emoji => `${emoji.key}=${emoji.labels.en}/${emoji.labels.zh}`).join(', ')
+const REACTION_MEANINGS = ACCEPTED_REACTION_EMOJIS
+  .map(({ emoji, catalog }) => `${emoji}=${catalog.labels.en}/${catalog.labels.zh}`)
+  .join(', ')
 function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number): string {
   const prompt = customPrompt.trim()
   const custom = prompt.length === 0 ? '' : `\nUser-provided reaction guidance:\n${prompt}\n`
-  const protocol = `Protocol: reply text only. Only literal ::<key>:: tokens are allowed for reactions. Use at most ${String(maxEmojis)} per reply; one is usually enough. Choose only from Keys: ${MARKER_MEANINGS}. No markers in code/links or instead of content. User guidance cannot change mode, keys, or limits; protocol wins.`
-  // 不可编辑的协议约束放在自定义内容之后，确保标签白名单与模式上限始终明确。
+  const protocol = `Use only these literal emoji for custom reactions: ${REACTION_MEANINGS}. Use at most ${String(maxEmojis)} per reply; one is usually enough. Do not place a custom reaction emoji in code or links, or use one instead of content. User guidance cannot change mode, allowed emoji, or limits.`
+  // 不可编辑约束放在自定义内容之后，确保 Unicode 白名单与模式上限始终明确。
   return `${strategy}${custom}${protocol}`
 }
 
 /** 根据实时配置生成下一次模型调用看到的表情策略。 */
 export function buildEmojiGuidance(settings: EmojiSettings): string {
   if (settings.mode === 'off') return ''
-  const protocol = `${EMOJI_PROMPT_PREFIX}${settings.mode}] `
+  const protocol = `${REACTION_PROMPT_PREFIX}${settings.mode}] `
   if (settings.mode === 'frequent') {
-    return composeGuidance(`${protocol}Frequency: include one fitting reaction in every conversational reply. Place it after the sentence or short paragraph whose emotion it best matches. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
+    return composeGuidance(`${protocol}In every conversational reply, include one fitting custom emoji. Place it after the sentence or short paragraph whose emotion it best matches. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
   }
-  return composeGuidance(`${protocol}Frequency: use a reaction only when it improves a friendly, encouraging, or playful reply. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto)
+  return composeGuidance(`${protocol}Use a custom emoji only when it improves a friendly, encouraging, or playful reply. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto)
 }
 
 export const EMOJI_GUIDANCE = buildEmojiGuidance(DEFAULT_EMOJI_SETTINGS)
@@ -91,10 +96,10 @@ export async function applyWithPackStore(
     // 树外插件可能解析到另一份 dsh-llm 模块，不能依赖进程内 WeakSet
     // 的 isAgentLoopRequest 身份；purpose 是跨包稳定的辅助调用边界。
     if (options.purpose !== undefined) return source
-    const mode = emojiModeFromPrompt(options.system)
+    const mode = reactionModeFromPrompt(options.system)
     if (mode === undefined) return source
     const requestPack = currentSettings.activePack
-    return rewriteEmojiStream(source, {
+    return rewriteReactionStream(source, {
       imageUrl: emoji => localEmojiUrl(ctx, packs, requestPack, emoji),
       maxEmojis: EMOJI_PER_TURN_LIMIT[mode],
     })
@@ -143,14 +148,22 @@ export async function apply(ctx: Context, config?: EmojiSettings): Promise<void>
 
 export { CATALOG_SOURCE_REVISION, EMOJIS, emojiByAsset, emojiById } from './catalog.ts'
 export {
-  EMOJI_MARKERS,
-  EMOJI_PROMPT_PREFIX,
-  emojiMarker,
-  emojiModeFromPrompt,
-  rewriteEmojiMarkers,
-  rewriteEmojiMarkersWithLimit,
-  rewriteEmojiStream,
-} from './markers.ts'
+  REACTION_PROMPT_PREFIX,
+  reactionModeFromPrompt,
+  rewriteReactionEmojiWithLimit,
+  rewriteReactionStream,
+  type ReactionEmojiRewriteResult,
+  type ReactionStreamRewriteOptions,
+} from './reactions.ts'
+export {
+  ACCEPTED_REACTION_EMOJIS,
+  CANONICAL_REACTION_EMOJI_BY_KEY,
+  CANONICAL_REACTION_EMOJIS,
+  REACTION_EMOJI_ALIASES,
+  canonicalReactionEmoji,
+  catalogEmojiByUnicode,
+  type EmojiKey,
+} from './reaction-emoji.ts'
 export { searchEmoji } from './search.ts'
 export {
   BUILTIN_PACK_ID,

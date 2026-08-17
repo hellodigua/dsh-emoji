@@ -116,7 +116,7 @@ describe('Profile Bundle package', () => {
     expect(packageJson.scripts['slice:deepseek']).toBe('python3 scripts/slice-deepseek-sheet.py')
     const runtimeFiles = [
       '../src/index.ts', '../src/assets.ts', '../src/catalog.ts', '../src/search.ts',
-      '../src/markers.ts', '../src/settings.ts', '../src/settings-model.ts', '../src/client/index.ts',
+      '../src/reactions.ts', '../src/reaction-emoji.ts', '../src/settings.ts', '../src/settings-model.ts', '../src/client/index.ts',
       '../src/pack-model.ts', '../src/packs.ts', '../src/client/settings-controller.ts',
       '../src/client/EmojiSettingsCard.tsx',
     ]

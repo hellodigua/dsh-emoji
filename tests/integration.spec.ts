@@ -32,7 +32,7 @@ class MemorySettings extends SettingsProvider {
 }
 
 class TextAdapter extends LlmAdapter {
-  text = '你好 ::happy::'
+  text = '你好 😊'
 
   async *stream(): AsyncIterable<StreamChunk> {
     yield { type: 'block-start', index: 0, blockType: 'text' }
@@ -92,13 +92,13 @@ async function modelText(ctx: Context): Promise<string> {
 }
 
 describe('real Cordis service composition', () => {
-  it('注册标签提示、转写流和真实临时端口素材路由', async () => {
+  it('注册 Unicode 表情提示、转写流和真实临时端口素材路由', async () => {
     const { ctx } = await setup()
     expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain(EMOJI_GUIDANCE)
 
     const text = await modelText(ctx)
-    expect(text).toContain('你好 ![Happy](')
-    const image = /!\[Happy\]\(([^)]+)\)/.exec(text)?.[1]
+    expect(text).toContain('你好 ![😊](')
+    const image = /!\[😊\]\(([^)]+)\)/.exec(text)?.[1]
     expect(image).toContain(`http://127.0.0.1:${String(ctx.webServer.port)}/api/dsh-emoji/assets/deepseek/8/ds_01.png`)
 
     const response = await fetch(String(image))
@@ -113,7 +113,7 @@ describe('real Cordis service composition', () => {
       provider: 'test', model: 'test', messages: [], system,
     }
     // Loader 会给实际 LLM 服务附带 scope filter；插件监听必须是 global，
-    // 否则提示词生效但最终正文中的 ::<key>:: 不会进入转写器。
+    // 否则提示词生效但最终正文中的受控 Unicode 表情不会进入转写器。
     const foreignScope = { [Context.filter]: () => false }
     const stream = ctx.waterfall(
       foreignScope as never,
@@ -126,7 +126,7 @@ describe('real Cordis service composition', () => {
     for await (const chunk of stream) {
       if (chunk.type === 'block-end' && chunk.block.type === 'text') text = chunk.block.text
     }
-    expect(text).toContain('![Happy](')
+    expect(text).toContain('![😊](')
   })
 
   it('不改写带 purpose 的压缩与标题等辅助模型调用', async () => {
@@ -140,7 +140,7 @@ describe('real Cordis service composition', () => {
     for await (const chunk of ctx.llm.stream(request)) {
       if (chunk.type === 'block-end' && chunk.block.type === 'text') text = chunk.block.text
     }
-    expect(text).toBe('你好 ::happy::')
+    expect(text).toBe('你好 😊')
   })
 
   it('disposer 移除提示、流转写和素材路由', async () => {
@@ -159,7 +159,7 @@ describe('real Cordis service composition', () => {
 
     await fiber.dispose()
     expect(renderPrompt(await context.systemPrompt.assemble())).not.toContain('dsh-inline-reaction:mode=')
-    expect(await modelText(context)).toBe('你好 ::happy::')
+    expect(await modelText(context)).toBe('你好 😊')
     expect((await fetch(`http://127.0.0.1:${String(context.webServer.port)}/api/dsh-emoji/assets/deepseek/ds_01.png`)).status).toBe(404)
   })
 
@@ -172,7 +172,7 @@ describe('real Cordis service composition', () => {
     await vi.waitFor(async () => {
       expect(renderPrompt(await ctx.systemPrompt.assemble())).not.toContain('dsh-inline-reaction:mode=')
     })
-    expect(await modelText(ctx)).toBe('你好 ::happy::')
+    expect(await modelText(ctx)).toBe('你好 😊')
 
     await ctx.settings.update(ns, {
       mode: 'frequent',
@@ -183,24 +183,24 @@ describe('real Cordis service composition', () => {
       expect(prompt).toContain('[dsh-inline-reaction:mode=frequent]')
       expect(prompt).toContain('严肃内容跳过表情，其余优先把表情放在最相关的转折句后。')
     })
-    expect(await modelText(ctx)).toContain('![Happy](')
+    expect(await modelText(ctx)).toContain('![😊](')
 
-    adapter.text = '模型漏掉了标签'
-    expect(await modelText(ctx)).toBe('模型漏掉了标签')
+    adapter.text = '模型漏掉了表情'
+    expect(await modelText(ctx)).toBe('模型漏掉了表情')
   })
 
   it('智能模式保留三张，高频模式保留四张，并允许重复表情', async () => {
     const { ctx, adapter } = await setup({ settings: true })
-    adapter.text = Array.from({ length: 5 }, (_, index) => `第${String(index + 1)}句 ::happy::`).join('\n')
+    adapter.text = Array.from({ length: 5 }, (_, index) => `第${String(index + 1)}句 😊`).join('\n')
 
-    expect((await modelText(ctx)).match(/!\[Happy\]\(/g)).toHaveLength(3)
+    expect((await modelText(ctx)).match(/!\[😊\]\(/g)).toHaveLength(3)
 
     const ns = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
     await ctx.settings.update(ns, { mode: 'frequent' })
     await vi.waitFor(async () => {
       expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain('[dsh-inline-reaction:mode=frequent]')
     })
-    expect((await modelText(ctx)).match(/!\[Happy\]\(/g)).toHaveLength(4)
+    expect((await modelText(ctx)).match(/!\[😊\]\(/g)).toHaveLength(4)
   })
 
   it('选择用户表情包后，新请求使用带包版本的稳定 URL，历史资源路由保持可读', async () => {
@@ -211,7 +211,7 @@ describe('real Cordis service composition', () => {
     await vi.waitFor(() => expect(ctx.settings.get(ns)).toMatchObject({ activePack: 'custom-blue@1.0.0' }))
 
     const text = await modelText(ctx)
-    const image = /!\[Happy\]\(([^)]+)\)/.exec(text)?.[1]
+    const image = /!\[😊\]\(([^)]+)\)/.exec(text)?.[1]
     expect(image).toContain('/api/dsh-emoji/assets/custom-blue/1.0.0/happy.png')
     const response = await fetch(String(image))
     expect(response.status).toBe(200)
