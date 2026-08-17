@@ -32,9 +32,9 @@ After installation and a Web Host restart, open **Settings → Plugins → Whale
 
 - **Off**: do not use emoji.
 - **Smart**: use emoji only when it meaningfully helps express emotion, up to 3 per turn. This is the default.
-- **Frequent**: consider emoji more readily without forcing one or seeking multiple emoji, up to 4 per turn.
+- **Frequent**: include one fitting custom emoji in every conversational reply and place it after the sentence or short paragraph whose emotion it best matches, up to 4 per turn.
 
-You can also choose an emoji pack, adjust its display size, or use **Additional prompt** to control emoji selection, tone, and usage. Changes apply to the next reply without a restart. The model still decides whether to use an emoji.
+You can also choose an emoji pack, adjust its display size, or use **Additional prompt** to control emoji selection, tone, and usage. Changes apply to the next reply without a restart. The model is responsible for following the selected frequency policy.
 
 ## Uploading your own emoji pack
 
