@@ -249,7 +249,7 @@ describe('controlled Unicode reaction rewrite', () => {
 describe('reaction stream rewrite', () => {
   it('不把末尾待确认的受控 Unicode 表情暴露给流式 UI', async () => {
     const chunks = await collect(rewriteReactionStream(stream('你好 😊'), { imageUrl }))
-    expect(chunks.find(chunk => chunk.type === 'text-delta')).toMatchObject({ text: '你好 ' })
+    expect(chunks.find(chunk => chunk.type === 'text-delta')).toMatchObject({ text: '你好' })
     const deltaText = chunks
       .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
       .map(chunk => chunk.text)
@@ -278,6 +278,49 @@ describe('reaction stream rewrite', () => {
     })
   })
 
+  it('暂存可能被相邻表情清理回删的尾随空白', async () => {
+    const chunks = await collect(rewriteReactionStream(
+      streamDeltas(['正文 😊 ', '👍 后续']),
+      { imageUrl },
+    ))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas).toEqual([
+      '正文 ![😊](http://127.0.0.1:3080/assets/ds_01.png)',
+      '后续',
+    ])
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { text: deltas.join('') },
+    })
+
+    const adjacentAtEnd = await collect(rewriteReactionStream(
+      streamDeltas(['正文 😊 👍']),
+      { imageUrl },
+    ))
+    const adjacentDeltas = adjacentAtEnd
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(adjacentDeltas.join('')).toBe(
+      '正文 ![😊](http://127.0.0.1:3080/assets/ds_01.png)',
+    )
+    expect(adjacentAtEnd.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { text: adjacentDeltas.join('') },
+    })
+  })
+
+  it('回答结束时原样补发普通尾随空白', async () => {
+    const original = '保留尾随 \t '
+    const chunks = await collect(rewriteReactionStream(streamDeltas([original]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas.join('')).toBe(original)
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: original },
+    })
+  })
+
   it('跨 delta 等待完整 grapheme，既能转写规范 ZWJ 表情也不会误拆未知变体', async () => {
     const canonical = await collect(rewriteReactionStream(
       streamDeltas(['点头 🙂', '‍', '↕️，继续']),
@@ -287,8 +330,8 @@ describe('reaction stream rewrite', () => {
       .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
       .map(chunk => chunk.text)
     expect(canonicalDeltas).toEqual([
-      '点头 ',
-      '![🙂‍↕️](http://127.0.0.1:3080/assets/ds_15.png)，继续',
+      '点头',
+      ' ![🙂‍↕️](http://127.0.0.1:3080/assets/ds_15.png)，继续',
     ])
 
     const variant = await collect(rewriteReactionStream(
@@ -311,8 +354,8 @@ describe('reaction stream rewrite', () => {
       .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
       .map(chunk => chunk.text)
     expect(deltas).toEqual([
-      '轻松一点 ',
-      '![😊](http://127.0.0.1:3080/assets/ds_01.png)，继续说明',
+      '轻松一点',
+      ' ![😊](http://127.0.0.1:3080/assets/ds_01.png)，继续说明',
     ])
   })
 
@@ -336,9 +379,138 @@ describe('reaction stream rewrite', () => {
     })
   })
 
+  it('普通方括号闭合并出现正文后缀后立即恢复流式转写', async () => {
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '[状态 😊]，',
+      '继续输出后文',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas).toEqual([
+      '[状态 ![😊](http://127.0.0.1:3080/assets/ds_01.png)]，',
+      '继续输出后文',
+    ])
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: deltas.join('') },
+    })
+  })
+
+  it.each([
+    ['链接', ['[状态 😊]', '(https://example.com) 后续']],
+    ['引用链接', ['[状态 😊]', '[ref]\n\n[ref]: https://example.com']],
+    ['引用定义', ['[状态 😊]', ': https://example.com']],
+  ])('方括号闭合后仍可能形成%s时继续保护其中的表情', async (_label, input) => {
+    const original = input.join('')
+    const chunks = await collect(rewriteReactionStream(streamDeltas(input), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas.join('')).toBe(original)
+    expect(deltas.join('')).not.toContain('![')
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: original },
+    })
+  })
+
+  it('链接目标包含平衡括号时仍保持流式增量与最终文本一致', async () => {
+    const original = '链接 [x](foo(bar)😊more) 后续'
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '链接 [x](foo(bar)',
+      '😊more',
+      ') 后续',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas.join('')).toBe(original)
+    expect(deltas.join('')).not.toContain('![')
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: original },
+    })
+  })
+
+  it('链接目标中的普通撇号不会阻塞后续流式输出', async () => {
+    const original = "链接 [x](https://example.com/it's😊) 后续"
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      "链接 [x](https://example.com/it's",
+      '😊) 后续',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas.at(-1)).toBe('😊) 后续')
+    expect(deltas.join('')).toBe(original)
+  })
+
+  it('普通比较符不会把后续表情和正文扣到 block-end', async () => {
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '条件 x < 10，结果 😊，',
+      '继续说明',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas).toEqual([
+      '条件 x < 10，结果 ![😊](http://127.0.0.1:3080/assets/ds_01.png)，',
+      '继续说明',
+    ])
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { text: deltas.join('') },
+    })
+  })
+
+  it('已受保护范围内的图片字面量不会阻塞后续增量', async () => {
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '代码 `![alt](url)`，',
+      '后续说明',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas).toEqual(['代码 `![alt](url)`，', '后续说明'])
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: deltas.join('') },
+    })
+  })
+
+  it('仍暂存可能闭合为 HTML 的属性表情', async () => {
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '标签 <span title="😊 属性',
+      '">正文</span>，后续 😆。',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas.join('')).toBe([
+      '标签 <span title="😊 属性">正文</span>，',
+      '后续 ![😆](http://127.0.0.1:3080/assets/ds_10.png)。',
+    ].join(''))
+    expect(deltas.join('')).not.toContain('title="![')
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: deltas.join('') },
+    })
+  })
+
+  it.each([
+    ['双引号', '标签 <span title="a > 😊more">正文 后续', ['标签 <span title="a > ', '😊more', '">正文 后续']],
+    ['单引号', "标签 <span title='a > 😊more'>正文 后续", ["标签 <span title='a > ", '😊more', "'>正文 后续"]],
+  ])('HTML 属性使用%s且包含大于号时仍保持流式增量与最终文本一致', async (_label, original, input) => {
+    const chunks = await collect(rewriteReactionStream(streamDeltas(input), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas.join('')).toBe(original)
+    expect(deltas.join('')).not.toContain('![')
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: original },
+    })
+  })
+
   it('流式收敛模型直出的插件图片，不让旧素材 URL 先进入客户端', async () => {
     const chunks = await collect(rewriteReactionStream(streamDeltas([
-      '规范化 ![开心](',
+      '规范化 !',
+      '[开心](',
       'http://127.0.0.1:3080/api/dsh-emoji/assets/legacy/1.0.0/happy.png) 后文',
     ]), { imageUrl }))
     const deltas = chunks
@@ -349,6 +521,66 @@ describe('reaction stream rewrite', () => {
       '规范化 ![😊](http://127.0.0.1:3080/assets/ds_01.png) 后文',
     )
     expect(deltas.join('')).not.toContain('/legacy/')
+  })
+
+  it('Markdown 图片的 ! 与 [ 跨 delta 时仍保持追加流与最终文本一致', async () => {
+    const original = '普通图片 ![Logo](https://example.com/logo.png) 后文'
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '普通图片 !',
+      '[Logo](https://example.com/logo.png) 后文',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas[0]).toBe('普通图片 ')
+    expect(deltas.join('')).toBe(original)
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: original },
+    })
+  })
+
+  it('图片标签后出现排除字符时立即恢复流式输出', async () => {
+    const original = '说明 ![占位] 后续内容，继续显示'
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '说明 !',
+      '[占位]',
+      ' 后续内容',
+      '，继续显示',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas).toEqual(['说明 ', '![占位] 后续内容', '，继续显示'])
+    expect(deltas.join('')).toBe(original)
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: original },
+    })
+  })
+
+  it('嵌套图片标签仍等待真正闭合后再收敛插件直链', async () => {
+    const chunks = await collect(rewriteReactionStream(streamDeltas([
+      '规范化 ![外层 [内层] 和 `]` 说明]',
+      '(',
+      'http://127.0.0.1:3080/api/dsh-emoji/assets/legacy/1.0.0/happy.png) 后文',
+    ]), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas[0]).toBe('规范化 ')
+    expect(deltas.join('')).toBe(
+      '规范化 ![😊](http://127.0.0.1:3080/assets/ds_01.png) 后文',
+    )
+  })
+
+  it('末尾普通感叹号只延迟到收口，不会丢失', async () => {
+    const chunks = await collect(rewriteReactionStream(streamDeltas(['真的吗 !']), { imageUrl }))
+    const deltas = chunks
+      .filter((chunk): chunk is Extract<StreamChunk, { type: 'text-delta' }> => chunk.type === 'text-delta')
+      .map(chunk => chunk.text)
+    expect(deltas.join('')).toBe('真的吗 !')
+    expect(chunks.find(chunk => chunk.type === 'block-end')).toMatchObject({
+      block: { type: 'text', text: '真的吗 !' },
+    })
   })
 
   it('异常结束且没有 block-end 时，也把待决尾部作为图片 delta 收口', async () => {

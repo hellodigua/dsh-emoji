@@ -45,7 +45,7 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 - `packRevision` 由 Host 保留；普通 save/reset 不能伪造或把它清零。
 - Client bundle 只把 React 与 `react/jsx-runtime` 作为平台 external，避免打包第二份 React。
 - 输出包装器不依赖 `isAgentLoopRequest()` 的模块私有 `WeakSet` 身份，因为树外插件可能解析到另一份 `dsh-llm` 模块；它用稳定的 `purpose` 字段排除压缩和标题调用，再从请求已经装配的 system prompt 读取私有模式标记，设置并发变化不会改变正在生成的回答。
-- `src/reaction-emoji.ts` 固定 40 个规范 Unicode 字符，并明确接受 `😄→laughing`、`🙂→happy` 两个常见输入别名；转写器按完整 grapheme cluster 精确匹配，不把肤色、性别等其他未列出变体或 Unicode 表情近似归类，双冒号 `::key::` 文本也不属于协议。任意文本不能直接组成文件路径或 URL。代码、链接与图片边界来自 CommonMark AST 节点位置，裸 HTTP(S) URL 另行保护；普通方括号和段落续行缩进仍属于可转写正文，而代码、Markdown 链接与图片、自动链接、裸 URL、转义内容和普通外部图片保持原文。
+- `src/reaction-emoji.ts` 固定 40 个规范 Unicode 字符，并明确接受 `😄→laughing`、`🙂→happy` 两个常见输入别名；转写器按完整 grapheme cluster 精确匹配，不把肤色、性别等其他未列出变体或 Unicode 表情近似归类，双冒号 `::key::` 文本也不属于协议。任意文本不能直接组成文件路径或 URL。代码、链接与图片边界来自 CommonMark AST 节点位置，裸 HTTP(S) URL 另行保护；流式片段尚未形成完整 AST 时，状态扫描器继续跟踪链接目标中的平衡括号和 HTML 属性的单双引号，普通方括号在闭合且出现非链接后缀后立即恢复输出，确保累计 `text-delta` 与最终 text block 一致。普通方括号和段落续行缩进仍属于可转写正文，而代码、Markdown 链接与图片、自动链接、裸 URL、转义内容和普通外部图片保持原文。
 - 用户可以用 `customPrompt` 定义表情偏好和跳过场景；模式标记、Unicode 白名单、智能 3 张／高频 4 张的程序上限以及代码与链接边界由插件在自定义内容之后重新声明，不能通过设置页删除。相邻表情间必须存在有效正文、只处理面向用户正文等边界由转写器独立执行；相同表情可以在正文不同位置重复。
 
 ## 当前语义
