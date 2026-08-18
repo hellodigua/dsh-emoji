@@ -307,6 +307,45 @@ function isPotentialReactionEmoji(grapheme: string): boolean {
   return ACCEPTED_REACTION_EMOJIS.some(({ emoji }) => emoji.startsWith(grapheme))
 }
 
+function canOpenMarkdownAngle(text: string, index: number): boolean {
+  return /[A-Za-z!/?]/u.test(text[index + 1] ?? '')
+}
+
+/**
+ * 方括号中的表情到达时，闭合符可能已经位于同一个或后续 delta 中。
+ * 只有闭合后仍可能立即形成链接、引用或定义时才继续暂存；普通正文后缀
+ * 已经出现后，继续等待只会把整段回复无意义地扣到 block-end。
+ */
+function squareContainerRemainsUnsettled(
+  text: string,
+  index: number,
+  initialDepth: number,
+  settledRanges: readonly ProtectedRange[],
+): boolean {
+  let depth = initialDepth
+  for (let cursor = index; cursor < text.length; cursor += 1) {
+    const settled = rangeContaining(settledRanges, cursor)
+    if (settled !== undefined) {
+      cursor = settled.end - 1
+      continue
+    }
+    if (isEscaped(text, cursor)) continue
+
+    const character = text[cursor]
+    if (character === '[') {
+      depth += 1
+      continue
+    }
+    if (character !== ']') continue
+
+    depth -= 1
+    if (depth > 0) continue
+    const next = text[cursor + 1]
+    return next === undefined || next === '(' || next === '[' || next === ':'
+  }
+  return true
+}
+
 /**
  * 判断一个当前看似普通文本的表情，是否仍可能被后续字符包进 Markdown 容器。
  * 已经完整解析的代码、链接、图片和裸 URL 会由调用方先排除；这里只保守处理
@@ -320,20 +359,135 @@ function hasUnsettledMarkdownBefore(
   let squareDepth = 0
   let openBacktickRun: number | undefined
   let angleOpen = false
+  let angleQuote: '"' | "'" | undefined
+  let angleCanOpenQuote = false
+  let linkDestinationDepth = 0
+  let linkDestinationQuote: '"' | "'" | undefined
+  let linkDestinationAngle = false
+  let linkDestinationAtStart = false
+  let linkDestinationCanOpenTitle = false
+  let canOpenLinkDestination = false
   let cursor = 0
   while (cursor < index) {
     const settled = rangeContaining(settledRanges, cursor)
     if (settled !== undefined) {
       cursor = settled.end
+      canOpenLinkDestination = false
       continue
     }
 
     if (isEscaped(text, cursor)) {
       cursor += 1
+      canOpenLinkDestination = false
       continue
     }
     const character = text[cursor]
+
+    if (linkDestinationDepth > 0) {
+      if (linkDestinationAngle) {
+        if (character === '>') linkDestinationAngle = false
+      } else if (linkDestinationQuote !== undefined) {
+        if (character === linkDestinationQuote) linkDestinationQuote = undefined
+      } else if ((character === '"' || character === "'") && linkDestinationCanOpenTitle) {
+        linkDestinationQuote = character
+        linkDestinationCanOpenTitle = false
+      } else if (character === '<' && linkDestinationDepth === 1 && linkDestinationAtStart) {
+        linkDestinationAngle = true
+        linkDestinationAtStart = false
+        linkDestinationCanOpenTitle = false
+      } else if (character === '(') {
+        linkDestinationDepth += 1
+        linkDestinationAtStart = false
+        linkDestinationCanOpenTitle = false
+      } else if (character === ')') {
+        linkDestinationDepth -= 1
+        linkDestinationAtStart = false
+        linkDestinationCanOpenTitle = false
+      } else if (/\s/u.test(character ?? '')) {
+        linkDestinationCanOpenTitle = true
+      } else {
+        linkDestinationAtStart = false
+        linkDestinationCanOpenTitle = false
+      }
+      cursor += 1
+      continue
+    }
+
+    if (angleOpen) {
+      if (angleQuote !== undefined) {
+        if (character === angleQuote) angleQuote = undefined
+      } else if ((character === '"' || character === "'") && angleCanOpenQuote) {
+        angleQuote = character
+        angleCanOpenQuote = false
+      } else if (character === '=') {
+        angleCanOpenQuote = true
+      } else if (character === '>') {
+        angleOpen = false
+        angleCanOpenQuote = false
+      } else if (!/\s/u.test(character ?? '')) {
+        angleCanOpenQuote = false
+      }
+      cursor += 1
+      canOpenLinkDestination = false
+      continue
+    }
+
     if (character === '`') {
+      let end = cursor + 1
+      while (text[end] === '`') end += 1
+      const runLength = end - cursor
+      if (openBacktickRun === undefined) openBacktickRun = runLength
+      else if (openBacktickRun === runLength) openBacktickRun = undefined
+      cursor = end
+      canOpenLinkDestination = false
+      continue
+    }
+    if (openBacktickRun !== undefined) {
+      cursor += 1
+      canOpenLinkDestination = false
+      continue
+    }
+
+    if (character === '(' && canOpenLinkDestination) {
+      linkDestinationDepth = 1
+      linkDestinationAtStart = true
+      linkDestinationCanOpenTitle = false
+      canOpenLinkDestination = false
+    } else if (character === '[') {
+      squareDepth += 1
+      canOpenLinkDestination = false
+    } else if (character === ']' && squareDepth > 0) {
+      squareDepth -= 1
+      canOpenLinkDestination = squareDepth === 0
+    } else if (character === '<') {
+      angleOpen = canOpenMarkdownAngle(text, cursor)
+      angleCanOpenQuote = false
+      canOpenLinkDestination = false
+    } else {
+      canOpenLinkDestination = false
+    }
+    cursor += 1
+  }
+
+  const squareUnsettled = squareDepth > 0
+    && squareContainerRemainsUnsettled(text, index, squareDepth, settledRanges)
+  return squareUnsettled
+    || openBacktickRun !== undefined
+    || angleOpen
+    || linkDestinationDepth > 0
+}
+
+function imageLabelEnd(text: string, imageStart: number): number | undefined {
+  let depth = 1
+  let openBacktickRun: number | undefined
+  let angleOpen = false
+  for (let cursor = imageStart + 2; cursor < text.length;) {
+    if (isEscaped(text, cursor)) {
+      cursor += 1
+      continue
+    }
+    const character = text[cursor]
+    if (character === '`' && !angleOpen) {
       let end = cursor + 1
       while (text[end] === '`') end += 1
       const runLength = end - cursor
@@ -346,16 +500,16 @@ function hasUnsettledMarkdownBefore(
       cursor += 1
       continue
     }
-    if (character === '[') squareDepth += 1
-    else if (character === ']' && squareDepth > 0) squareDepth -= 1
-    else if (character === '<') angleOpen = true
-    else if (character === '>') angleOpen = false
+    if (character === '<') angleOpen = true
+    else if (character === '>' && angleOpen) angleOpen = false
+    else if (!angleOpen && character === '[') depth += 1
+    else if (!angleOpen && character === ']') {
+      depth -= 1
+      if (depth === 0) return cursor
+    }
     cursor += 1
   }
-
-  if (squareDepth > 0 || openBacktickRun !== undefined || angleOpen) return true
-  const prefix = text.slice(0, index)
-  return /\]\([^)]*$/u.test(prefix) || /\]\[[^\]]*$/u.test(prefix)
+  return undefined
 }
 
 /** 未闭合图片可能稍后变成本插件直链，必须从 `!` 起暂存，避免先渲染旧素材。 */
@@ -365,12 +519,22 @@ function incompleteImageStart(
   protectedRanges: readonly ProtectedRange[],
   directRanges: readonly ProtectedRange[],
 ): number | undefined {
-  for (let index = 0; index < stableEnd - 1; index += 1) {
-    if (text[index] !== '!' || text[index + 1] !== '[' || isEscaped(text, index)) continue
+  for (let index = 0; index < stableEnd; index += 1) {
+    if (text[index] !== '!' || isEscaped(text, index)) continue
+    const next = text[index + 1]
+    if (next === undefined) return index
+    if (next !== '[') continue
+    if (rangeContaining(protectedRanges, index) !== undefined) continue
     const direct = directRanges.find(range => range.start === index)
-    const external = protectedRanges.find(range => range.start === index)
-    if (direct === undefined && external === undefined) return index
-    if ((direct?.end ?? external?.end ?? Number.POSITIVE_INFINITY) > stableEnd) return index
+    if (direct !== undefined) {
+      if (direct.end > stableEnd) return index
+      continue
+    }
+
+    const labelEnd = imageLabelEnd(text, index)
+    if (labelEnd === undefined) return index
+    const afterLabel = text[labelEnd + 1]
+    if (afterLabel === undefined || afterLabel === '(') return index
   }
   return undefined
 }
@@ -387,6 +551,7 @@ function stableReactionPrefixEnd(text: string): number {
 
   let stableEnd = text.length
   if (isPotentialReactionEmoji(last.segment)) stableEnd = last.index
+  while (stableEnd > 0 && /[ \t]/u.test(text[stableEnd - 1] ?? '')) stableEnd -= 1
   if (stableEnd === 0) return 0
 
   const protectedRanges = markdownProtectedRanges(text)
