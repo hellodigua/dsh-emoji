@@ -182,21 +182,30 @@ export function apply(ctx: ClientContext): void {
     }
   }, 'dsh-emoji: settings invalidations')
 
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: EMOJI_SETTINGS_NAMESPACE,
-    locale: EMOJI_LOCALE_NS,
-    inject: () => ({
-      hooks: { emojiSettings: controller },
-      editMode: controller.editMode,
-      editDisplaySize: controller.editDisplaySize,
-      editCustomPrompt: controller.editCustomPrompt,
-      editActivePack: controller.editActivePack,
-      uploadPack: controller.uploadPack,
-      removePack: controller.removePack,
-      save: controller.save,
-      discard: controller.discard,
-      reset: controller.reset,
-    }),
-  }, EmojiSettingsCard))
+  // Runtime contract note: newer dsh-client-ui-slots treats settings.plugin.item
+  // as a list slot and requires options.id; the rc.7 types here still model it as
+  // keyed (key only). Passing both keeps the plugin loadable on both versions.
+  // The options object is built as a variable because object literals passed
+  // inline would trip excess-property checks against the rc.7 keyed typing.
+  ctx.slots.inject('settings.plugin.item', () => {
+    const settingsSlotOptions = {
+      name: 'settings.plugin.item' as const,
+      key: EMOJI_SETTINGS_NAMESPACE,
+      id: EMOJI_SETTINGS_NAMESPACE,
+      locale: EMOJI_LOCALE_NS,
+      inject: () => ({
+        hooks: { emojiSettings: controller },
+        editMode: controller.editMode,
+        editDisplaySize: controller.editDisplaySize,
+        editCustomPrompt: controller.editCustomPrompt,
+        editActivePack: controller.editActivePack,
+        uploadPack: controller.uploadPack,
+        removePack: controller.removePack,
+        save: controller.save,
+        discard: controller.discard,
+        reset: controller.reset,
+      }),
+    } as const
+    return ctx.slots.register(settingsSlotOptions, EmojiSettingsCard)
+  })
 }

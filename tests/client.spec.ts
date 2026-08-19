@@ -46,7 +46,7 @@ afterEach(() => {
 })
 
 describe('Web Client inline style', () => {
-  it('按 Settings namespace 注册 rc.7 keyed slot', () => {
+  it('按 Settings namespace 注册 slot（key + id 双契约兼容）', () => {
     const register = vi.fn(() => vi.fn())
     const rpc = {
       call: vi.fn().mockResolvedValue({
@@ -72,8 +72,10 @@ describe('Web Client inline style', () => {
     expect(register.mock.calls[0]?.[0]).toMatchObject({
       name: 'settings.plugin.item',
       key: EMOJI_SETTINGS_NAMESPACE,
+      // newer runtimes treat settings.plugin.item as a list slot and require id;
+      // rc.7 keyed runtimes still read key — both are passed on purpose
+      id: EMOJI_SETTINGS_NAMESPACE,
     })
-    expect(register.mock.calls[0]?.[0]).not.toHaveProperty('id')
     expect(register.mock.calls[0]?.[0]).not.toHaveProperty('order')
   })
 
