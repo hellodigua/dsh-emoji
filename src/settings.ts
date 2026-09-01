@@ -3,7 +3,7 @@
 import type { ConnectionRpcHandler } from '@deepseek-ai/dsh-client-connection'
 import type { RpcResult } from '@deepseek-ai/dsh-host-apiproxy/api'
 import {
-  SettingsConflictError, settingsNamespace, type SettingsProvider,
+  SettingsConflictError, type SettingsNamespace, type SettingsProvider,
 } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import {
@@ -22,7 +22,7 @@ import {
 import { EmojiPackError, EmojiPackStore } from './packs.ts'
 import { BUILTIN_PACK_REF, EMOJI_PACK_REF_PATTERN } from './pack-model.ts'
 
-export const EMOJI_SETTINGS_NS = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
+export const EMOJI_SETTINGS_NS = EMOJI_SETTINGS_NAMESPACE as SettingsNamespace
 
 /** Loader 配置与 Settings 服务共用同一份运行时校验。 */
 export const EmojiSettingsSchema: z<EmojiSettings> = z.object({

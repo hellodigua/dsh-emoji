@@ -9,11 +9,12 @@ import LlmService, {
   LlmAdapter, markAgentLoopRequest,
   type GenerateOptions, type StreamChunk,
 } from '@deepseek-ai/dsh-llm'
-import { SettingsProvider, settingsNamespace, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
+import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import {
-  applyWithPackStore, DEFAULT_EMOJI_SETTINGS, EMOJI_GUIDANCE, EMOJI_KEY_SET, EMOJI_SETTINGS_NAMESPACE,
+  applyWithPackStore, DEFAULT_EMOJI_SETTINGS, EMOJI_GUIDANCE, EMOJI_KEY_SET,
 } from '../src/index.ts'
+import { EMOJI_SETTINGS_NS } from '../src/settings.ts'
 import { EmojiPackStore } from '../src/packs.ts'
 import { EMOJIS } from '../src/catalog.ts'
 
@@ -165,7 +166,7 @@ describe('real Cordis service composition', () => {
 
   it('持久化设置可在关闭、智能与高频之间实时切换', async () => {
     const { ctx, adapter } = await setup({ settings: true })
-    const ns = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
+    const ns = EMOJI_SETTINGS_NS
     expect(ctx.settings.get(ns)).toEqual(DEFAULT_EMOJI_SETTINGS)
 
     await ctx.settings.update(ns, { mode: 'off' })
@@ -195,7 +196,7 @@ describe('real Cordis service composition', () => {
 
     expect((await modelText(ctx)).match(/!\[😊\]\(/g)).toHaveLength(3)
 
-    const ns = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
+    const ns = EMOJI_SETTINGS_NS
     await ctx.settings.update(ns, { mode: 'frequent' })
     await vi.waitFor(async () => {
       expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain('[dsh-inline-reaction:mode=frequent]')
@@ -206,7 +207,7 @@ describe('real Cordis service composition', () => {
   it('选择用户表情包后，新请求使用带包版本的稳定 URL，历史资源路由保持可读', async () => {
     const { ctx, packs } = await setup({ settings: true })
     await packs.installArchive(await customPackArchive())
-    const ns = settingsNamespace(EMOJI_SETTINGS_NAMESPACE)
+    const ns = EMOJI_SETTINGS_NS
     await ctx.settings.update(ns, { activePack: 'custom-blue@1.0.0' })
     await vi.waitFor(() => expect(ctx.settings.get(ns)).toMatchObject({ activePack: 'custom-blue@1.0.0' }))
 

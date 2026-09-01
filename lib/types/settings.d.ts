@@ -1,10 +1,10 @@
 /** Host 侧设置 schema、持久化快照和插件自有 RPC。 */
 import type { ConnectionRpcHandler } from '@deepseek-ai/dsh-client-connection';
-import { type SettingsProvider } from '@deepseek-ai/dsh-settings';
+import { type SettingsNamespace, type SettingsProvider } from '@deepseek-ai/dsh-settings';
 import z from '@deepseek-ai/schemastery';
 import { type EmojiSettings, type EmojiSettingsDocument } from './settings-model.ts';
 import { EmojiPackStore } from './packs.ts';
-export declare const EMOJI_SETTINGS_NS: import("@deepseek-ai/dsh-settings").SettingsNamespace;
+export declare const EMOJI_SETTINGS_NS: SettingsNamespace;
 /** Loader 配置与 Settings 服务共用同一份运行时校验。 */
 export declare const EmojiSettingsSchema: z<EmojiSettings>;
 /** 读取当前有效值与并发写 revision，供插件设置页使用。 */

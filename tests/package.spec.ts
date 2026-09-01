@@ -97,6 +97,12 @@ describe('Profile Bundle package', () => {
     expect(readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')).toContain('name: dsh-emoji')
   })
 
+  it('Host 设置命名空间只依赖公共类型，不要求运行时转换函数', () => {
+    const source = readFileSync(new URL('../src/settings.ts', import.meta.url), 'utf8')
+    expect(source).toContain('type SettingsNamespace')
+    expect(source).not.toMatch(/\bsettingsNamespace\b/)
+  })
+
   it('插件卡片使用 DSH 公共折叠图标，不再渲染平台相关的文本箭头', () => {
     const source = readFileSync(new URL('../src/client/EmojiSettingsCard.tsx', import.meta.url), 'utf8')
     expect(source).toContain("import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'")
