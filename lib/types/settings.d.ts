@@ -11,7 +11,7 @@ export declare const EmojiSettingsSchema: z<EmojiSettings>;
 export declare function describeEmojiSettings(settings: SettingsProvider, packs?: EmojiPackStore): EmojiSettingsDocument;
 /**
  * 构造插件自有设置 RPC。它只暴露 dsh-emoji 命名空间，不借用或放宽
- * DSH core 的通用设置白名单；物理通道另由调用方限制为 loopback。
+ * DSH core 的通用设置白名单；物理通道由 Connection 执行来源检查和认证。
  */
 export declare function createEmojiSettingsRpcHandler(settings: SettingsProvider, packs?: EmojiPackStore, onCommitted?: (value: EmojiSettings) => void): ConnectionRpcHandler;
 //# sourceMappingURL=settings.d.ts.map

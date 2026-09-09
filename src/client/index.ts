@@ -1,8 +1,9 @@
 /** DSH 表情插件 Web Client half：行内布局与插件设置卡片。 */
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import {
   DEFAULT_EMOJI_SETTINGS,
@@ -182,11 +183,7 @@ export function apply(ctx: ClientContext): void {
     }
   }, 'dsh-emoji: settings invalidations')
 
-  // Runtime contract note: newer dsh-client-ui-slots treats settings.plugin.item
-  // as a list slot and requires options.id; the rc.7 types here still model it as
-  // keyed (key only). Passing both keeps the plugin loadable on both versions.
-  // The options object is built as a variable because object literals passed
-  // inline would trip excess-property checks against the rc.7 keyed typing.
+  // The namespace identifies this card in the Host schema and Client registry.
   ctx.slots.inject('settings.plugin.item', () => {
     const settingsSlotOptions = {
       name: 'settings.plugin.item' as const,

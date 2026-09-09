@@ -65,7 +65,8 @@ export interface EmojiSettingsWriteRequest {
 }
 
 export const EMOJI_SETTINGS_NAMESPACE = 'dsh-emoji'
-export const EMOJI_SETTINGS_RPC_CHANNEL = '/dsh-emoji-settings'
+export const EMOJI_SETTINGS_RPC_CHANNEL = '/api'
+export const EMOJI_SETTINGS_RPC_PREFIX = 'dsh-emoji-settings'
 
 export function isEmojiMode(value: unknown): value is EmojiMode {
   return typeof value === 'string' && (EMOJI_MODES as readonly string[]).includes(value)

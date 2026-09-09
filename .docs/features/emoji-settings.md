@@ -20,9 +20,9 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 数据流
 
-1. Host half 通过 DSH 0.1.0-rc.7 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
+1. Host half 通过 DSH 0.1.5-alpha.1 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
 2. Web Client 注入 `dsh-client-ui-settings-plugins`，并以 `dsh-emoji` Settings namespace 作为 key，在其 keyed `settings.plugin.item` 插槽注册配置卡片。
-3. Client 通过 `/dsh-emoji-settings` 自有 Connection RPC 执行 `get`、`save`、`reset`、`pack-upload`、`pack-remove`；包操作细节见 [`user-emoji-packs.md`](user-emoji-packs.md)。
+3. Client 通过 `/api` 通道下 `dsh-emoji-settings/*` 的 Connection RPC 执行 `get`、`save`、`reset`、`pack-upload`、`pack-remove`；包操作细节见 [`user-emoji-packs.md`](user-emoji-packs.md)。
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。
 5. Host watcher 更新内存设置，并触发 `system-prompt/change`。
 6. 动态 prompt provider 在每次 assembly 时读取最新设置，把启用模式写入 `[dsh-inline-reaction:mode=<mode>]` 请求标记，并将 `customPrompt` 追加到内置策略后；LLM 流开始时固定该请求的 `activePack`。内置提示以 `Unicode=English/中文` 列出 42 个受控输入字符，对应 40 个核心语义 key，不暴露插件包名或内部 key；提示约束本身不保证模型服从。
@@ -39,12 +39,12 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 安全边界
 
-- 自有 RPC channel 使用 `{ authority: 'loopback' }`，非本机页面不能读取或修改配置。
+- `src/settings-routes.ts` 通过 `connection.fetch.register()` 注册五个精确的 POST 路由，使用官方 Connection envelope schema 校验消息及 endpoint。认证、Host/Origin 检查和缓冲请求体上限由 DSH 的共享 `/api` 通道负责；插件不提供独立鉴权或通用代理。Client 同时要求 `connection.isLoopback`，不能操作的页面只显示不可用状态。
 - RPC 只暴露 `dsh-emoji` 命名空间，不调用 DSH core 通用设置 API，也不扩大其 namespace allowlist。
 - Web Client 不接收文件路径；持久化仍由 DSH Settings provider 负责。
 - `packRevision` 由 Host 保留；普通 save/reset 不能伪造或把它清零。
 - Client bundle 只把 React 与 `react/jsx-runtime` 作为平台 external，避免打包第二份 React。
-- 输出包装器不依赖 `isAgentLoopRequest()` 的模块私有 `WeakSet` 身份，因为树外插件可能解析到另一份 `dsh-llm` 模块；它用稳定的 `purpose` 字段排除压缩和标题调用，再从请求已经装配的 system prompt 读取私有模式标记，设置并发变化不会改变正在生成的回答。
+- 输出包装器不依赖 `isAgentLoopRequest()` 的模块私有 `WeakSet` 身份，因为树外插件可能解析到另一份 `dsh-llm` 模块；它用稳定的 `purpose` 字段排除压缩和标题调用，再由 `src/request-mode.ts` 从请求已经装配的有效系统提示快照读取私有模式标记（显式 `system` 或最新非空 system 消息），不从用户正文或过期快照启用转写，设置并发变化不会改变正在生成的回答。
 - `src/reaction-emoji.ts` 固定 40 个规范 Unicode 字符，并明确接受 `😄→laughing`、`🙂→happy` 两个常见输入别名；转写器按完整 grapheme cluster 精确匹配，不把肤色、性别等其他未列出变体或 Unicode 表情近似归类，双冒号 `::key::` 文本也不属于协议。任意文本不能直接组成文件路径或 URL。代码、链接与图片边界来自 CommonMark AST 节点位置，裸 HTTP(S) URL 另行保护；流式片段尚未形成完整 AST 时，状态扫描器继续跟踪链接目标中的平衡括号和 HTML 属性的单双引号，普通方括号在闭合且出现非链接后缀后立即恢复输出，确保累计 `text-delta` 与最终 text block 一致。普通方括号和段落续行缩进仍属于可转写正文，而代码、Markdown 链接与图片、自动链接、裸 URL、转义内容和普通外部图片保持原文。
 - 用户可以用 `customPrompt` 定义表情偏好和跳过场景；模式标记、Unicode 白名单、智能 3 张／高频 4 张的程序上限以及代码与链接边界由插件在自定义内容之后重新声明，不能通过设置页删除。相邻表情间必须存在有效正文、只处理面向用户正文等边界由转写器独立执行；相同表情可以在正文不同位置重复。
 

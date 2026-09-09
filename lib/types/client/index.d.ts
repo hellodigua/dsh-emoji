@@ -1,4 +1,4 @@
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 import { type EmojiDisplaySize } from '../settings-model.ts';
 import { type EmojiLocaleKey } from './locales.ts';
 declare module '@deepseek-ai/dsh-client-ui-slots' {

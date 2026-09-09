@@ -83,7 +83,7 @@ User packs live under `$DSH_HOME/emoji-packs/` (default `~/.dsh/emoji-packs/`), 
 
 ## Compatibility
 
-This version targets npm `@deepseek-ai/dsh@0.1.0-rc.7` and declares DSH peers as `^0.1.0-rc.7`. Local development pins the exact rc.7 type graph, while the Web Profile provides the shared runtime at deployment.
+The verified DSH release is npm `@deepseek-ai/dsh@0.1.5-alpha.1`, with Node.js `^22.19.0 || >=24`. Development pins the exact DSH type graph; the Web Profile supplies the shared runtime. Per-release compatibility is recorded in `package.json` under `dsh.compatibility.dshReleases`.
 
 ## Local development
 
