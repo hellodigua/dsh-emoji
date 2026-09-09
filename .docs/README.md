@@ -70,7 +70,6 @@
 
 - DSH peers 使用 `^0.1.5-alpha.1`；本地开发依赖固定为精确 `0.1.5-alpha.1`，部署由 Web Profile 提供共享运行时。精确发行版的声明见 `package.json#dsh.compatibility.dshReleases`。
 - 自动化检查覆盖类型、包结构、系统消息快照、设置路由、状态竞态、PNG 校验、40 项规范映射、两个输入别名、多码点 grapheme、Unicode 原文保留及 CommonMark 边界。
-- 发行兼容性需要真实 Host 冷启动、认证 API、Client 设置读写、换包、模型回复和生命周期验证；测试过程记录保存在协作工作区。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
 - system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，不向模型暴露插件包名或内部 key；智能模式允许零张，高频模式要求所有对话回复都加入一个匹配反应，并提供完整的 42 项 `Unicode=English/中文` 输入目录。Host 只精确转写白名单字符，不做情绪推断或兜底；相邻受控表情、模型直出的插件图片、未知 Unicode 与 Markdown 边界由转写器独立处理。模型是否遵循频率仍属于概率行为。
 - 蓝色正面鲸鱼素材使用缓存版本 `v=8`，素材 ID 与总览图 1～40 编号严格一致，全部预览和路由拒绝边界由自动化测试覆盖。
