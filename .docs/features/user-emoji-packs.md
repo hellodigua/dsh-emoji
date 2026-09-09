@@ -17,7 +17,7 @@ images/<canonical-key>.png
 
 ## 安装与持久化
 
-1. Client 用 FileReader 读取 ZIP，经 loopback-only `/dsh-emoji-settings/pack-upload` RPC 发送 canonical base64。
+1. Client 用 FileReader 读取 ZIP，经 DSH 共享认证通道的 `/api/dsh-emoji-settings/pack-upload` RPC 发送 canonical base64。
 2. `src/packs.ts` 在解压前限制归档、单文件与声明解压体积，并拒绝绝对路径、反斜线、空字节和 `.`/`..` 段。
 3. 解压后校验唯一包根、manifest、完整 key 集、PNG 扩展名、完整解码、宽高和额外文件。
 4. Host 先写 `$DSH_HOME/emoji-packs/<id>/.install-*`，全部成功后原子 rename 到 `<version>/`；同一个 `id@version` 只允许完全相同的归档幂等重装，内容变化必须升级版本。
@@ -101,7 +101,7 @@ Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在�
 ## 边界
 
 - v0.2.0 不支持任意新语义、AI 自动标注、按模型/Agent 绑定或用户输入框选择器。
-- RPC 复用 DSH Connection 的 160 MiB HTTP carrier 上限，但插件自身在 base64 解码前把 ZIP 限制为 20 MiB。
+- RPC 复用 DSH Connection 配置的缓冲请求体上限（默认 300 MiB）；插件在 base64 解码前把 ZIP 限制为 20 MiB。
 - Host 会完整解码 PNG 以确认文件可用，但不重编码素材；浏览器负责最终呈现。
 - 移除不回收磁盘；未来若增加永久删除，必须先设计可证明的历史引用或明确的破坏性确认流程。
 - 远程目录当前只是设计结论，v0.2.0 仍只支持本地 ZIP 上传；实现时不得演变为 Host 代用户请求任意 URL 的通用下载器。

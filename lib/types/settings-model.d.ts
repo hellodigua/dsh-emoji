@@ -36,7 +36,8 @@ export interface EmojiSettingsWriteRequest {
     expectedRevision: number;
 }
 export declare const EMOJI_SETTINGS_NAMESPACE = "dsh-emoji";
-export declare const EMOJI_SETTINGS_RPC_CHANNEL = "/dsh-emoji-settings";
+export declare const EMOJI_SETTINGS_RPC_CHANNEL = "/api";
+export declare const EMOJI_SETTINGS_RPC_PREFIX = "dsh-emoji-settings";
 export declare function isEmojiMode(value: unknown): value is EmojiMode;
 export declare function isEmojiDisplaySize(value: unknown): value is EmojiDisplaySize;
 export declare function isEmojiPackRef(value: unknown): value is string;

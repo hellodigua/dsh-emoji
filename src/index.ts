@@ -13,7 +13,7 @@ import {
 } from './assets.ts'
 import { EMOJIS, type EmojiCatalogEntry } from './catalog.ts'
 import {
-  REACTION_PROMPT_PREFIX, reactionModeFromPrompt, rewriteReactionStream,
+  REACTION_PROMPT_PREFIX, rewriteReactionStream,
 } from './reactions.ts'
 import {
   ACCEPTED_REACTION_EMOJIS,
@@ -21,7 +21,6 @@ import {
 import {
   DEFAULT_EMOJI_SETTINGS,
   EMOJI_PER_TURN_LIMIT,
-  EMOJI_SETTINGS_RPC_CHANNEL,
   type EmojiSettings,
 } from './settings-model.ts'
 import {
@@ -31,6 +30,8 @@ import {
 } from './settings.ts'
 import { BUILTIN_PACK_REF } from './pack-model.ts'
 import { EmojiPackStore } from './packs.ts'
+import { reactionModeFromRequest } from './request-mode.ts'
+import { registerEmojiSettingsRoutes } from './settings-routes.ts'
 
 export const name = 'dsh-emoji'
 export const inject = ['llm', 'systemPrompt']
@@ -96,7 +97,7 @@ export async function applyWithPackStore(
     // 树外插件可能解析到另一份 dsh-llm 模块，不能依赖进程内 WeakSet
     // 的 isAgentLoopRequest 身份；purpose 是跨包稳定的辅助调用边界。
     if (options.purpose !== undefined) return source
-    const mode = reactionModeFromPrompt(options.system)
+    const mode = reactionModeFromRequest(options)
     if (mode === undefined) return source
     const requestPack = currentSettings.activePack
     return rewriteReactionStream(source, {
@@ -122,14 +123,7 @@ export async function applyWithPackStore(
 
     settingsCtx.inject(['connection'], (connectionCtx) => {
       const handler = createEmojiSettingsRpcHandler(settingsCtx.settings, packs, adoptSettings)
-      connectionCtx.effect(
-        () => connectionCtx.connection.rpc.handle(
-          EMOJI_SETTINGS_RPC_CHANNEL,
-          handler,
-          { authority: 'loopback' },
-        ),
-        'dsh-emoji: settings rpc',
-      )
+      registerEmojiSettingsRoutes(connectionCtx, handler)
     })
   })
 

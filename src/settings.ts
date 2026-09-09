@@ -1,7 +1,7 @@
 /** Host 侧设置 schema、持久化快照和插件自有 RPC。 */
 
 import type { ConnectionRpcHandler } from '@deepseek-ai/dsh-client-connection'
-import type { RpcResult } from '@deepseek-ai/dsh-host-apiproxy/api'
+import type { ConnectionRpcResult as RpcResult } from '@deepseek-ai/dsh-client-connection'
 import {
   SettingsConflictError, type SettingsNamespace, type SettingsProvider,
 } from '@deepseek-ai/dsh-settings'
@@ -110,7 +110,7 @@ export function describeEmojiSettings(
 
 /**
  * 构造插件自有设置 RPC。它只暴露 dsh-emoji 命名空间，不借用或放宽
- * DSH core 的通用设置白名单；物理通道另由调用方限制为 loopback。
+ * DSH core 的通用设置白名单；物理通道由 Connection 执行来源检查和认证。
  */
 export function createEmojiSettingsRpcHandler(
   settings: SettingsProvider,

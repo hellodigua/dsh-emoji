@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ClientConnectionRpc } from '@deepseek-ai/dsh-client-connection/client'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 
 // 此文件验证插件自己的设置状态和样式；DSH primitives 的根入口还会加载
 // Markdown/KaTeX CSS，在 Node 测试环境中用最小组件替身隔离该平台资源。
@@ -193,11 +193,11 @@ describe('Web Client settings controller', () => {
     const rpc = {
       call: async (_channel: string, endpoint: string, payload: unknown) => {
         requests.push({ endpoint, payload })
-        if (endpoint === 'save') {
+        if (endpoint === 'dsh-emoji-settings/save') {
           const request = payload as { settings: EmojiSettingsDocument['settings']; expectedRevision: number }
           document = { ...document, settings: request.settings, revision: request.expectedRevision + 1 }
         }
-        if (endpoint === 'reset') {
+        if (endpoint === 'dsh-emoji-settings/reset') {
           const request = payload as { expectedRevision: number }
           document = {
             ...document,
@@ -229,7 +229,7 @@ describe('Web Client settings controller', () => {
       expect(controller.getSnapshot()).toMatchObject({ revision: 1, dirty: false, saved: true })
     })
     expect(requests.at(-1)).toEqual({
-      endpoint: 'save',
+      endpoint: 'dsh-emoji-settings/save',
       payload: {
         settings: {
           mode: 'frequent',
@@ -254,7 +254,7 @@ describe('Web Client settings controller', () => {
         revision: 2,
       })
     })
-    expect(requests.at(-1)).toEqual({ endpoint: 'reset', payload: { expectedRevision: 1 } })
+    expect(requests.at(-1)).toEqual({ endpoint: 'dsh-emoji-settings/reset', payload: { expectedRevision: 1 } })
   })
 
   it('非 loopback 页面不发请求并展示不可用状态', async () => {
@@ -299,12 +299,12 @@ describe('Web Client settings controller', () => {
     let packRevision = 0
     const rpc = {
       call: vi.fn(async (_channel: string, endpoint: string, payload: unknown) => {
-        if (endpoint === 'pack-upload') {
+        if (endpoint === 'dsh-emoji-settings/pack-upload') {
           expect((payload as { archiveBase64: string }).archiveBase64).toBe('UEsDBA==')
           packs = [BUILTIN_PACK, CUSTOM_PACK]
           packRevision += 1
         }
-        if (endpoint === 'pack-remove') {
+        if (endpoint === 'dsh-emoji-settings/pack-remove') {
           expect(payload).toEqual({ packRef: CUSTOM_PACK.ref })
           packs = [BUILTIN_PACK]
           packRevision += 1

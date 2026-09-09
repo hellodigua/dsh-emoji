@@ -3,7 +3,8 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { strToU8, zipSync } from 'fflate'
-import { Context } from '@deepseek-ai/cordis'
+import { Context, type Fiber } from '@deepseek-ai/cordis'
+import { HostConnectionService } from '@deepseek-ai/dsh-client-connection'
 import HttpServer from '@deepseek-ai/dsh-host-webserver'
 import LlmService, {
   LlmAdapter, markAgentLoopRequest,
@@ -53,7 +54,7 @@ afterEach(async () => {
   packRoot = undefined
 })
 
-async function setup(options?: { settings?: boolean }): Promise<{ ctx: Context; adapter: TextAdapter; packs: EmojiPackStore }> {
+async function setup(options?: { settings?: boolean; connection?: boolean }): Promise<{ ctx: Context; adapter: TextAdapter; packs: EmojiPackStore; fiber: Fiber }> {
   context = new Context()
   await context.plugin(SystemPrompt)
   await context.plugin(LlmService)
@@ -61,14 +62,19 @@ async function setup(options?: { settings?: boolean }): Promise<{ ctx: Context; 
   context.llm.registerAdapter(['test'], adapter)
   await context.plugin(HttpServer, { host: '127.0.0.1', port: 0 })
   if (options?.settings === true) await context.plugin(MemorySettings)
+  if (options?.connection === true) {
+    await context.plugin(Object.assign((ctx: Context) => {
+      new HostConnectionService(ctx, [], { isAuthenticated: () => true } as never)
+    }, { inject: ['webServer'] }))
+  }
   packRoot = await mkdtemp(join(tmpdir(), 'dsh-emoji-packs-'))
   const packs = new EmojiPackStore({ root: packRoot })
   const plugin = Object.assign(
     async (ctx: Context, config?: typeof DEFAULT_EMOJI_SETTINGS) => await applyWithPackStore(ctx, config, packs),
     { inject: ['llm', 'systemPrompt'] },
   )
-  await context.plugin(plugin)
-  return { ctx: context, adapter, packs }
+  const fiber = await context.plugin(plugin)
+  return { ctx: context, adapter, packs, fiber }
 }
 
 async function customPackArchive(): Promise<Uint8Array> {
@@ -81,10 +87,14 @@ async function customPackArchive(): Promise<Uint8Array> {
   })
 }
 
-async function modelText(ctx: Context): Promise<string> {
+async function modelText(ctx: Context, legacy = false): Promise<string> {
   const system = renderPrompt(await ctx.systemPrompt.assemble())
   const request = markAgentLoopRequest<GenerateOptions>({
-    provider: 'test', model: 'test', messages: [], system,
+    provider: 'test', model: 'test',
+    ...(legacy ? { messages: [], system } : {
+      messages: [{ role: 'system', content: [{ type: 'text', text: system }],
+        source: { kind: 'plugin', plugin: '@deepseek-ai/dsh-system-prompt' } }] as GenerateOptions['messages'],
+    }),
   })
   for await (const chunk of ctx.llm.stream(request)) {
     if (chunk.type === 'block-end' && chunk.block.type === 'text') return chunk.block.text
@@ -93,6 +103,22 @@ async function modelText(ctx: Context): Promise<string> {
 }
 
 describe('real Cordis service composition', () => {
+  it('卸载时移除共享 API 路由和设置命名空间', async () => {
+    const { ctx, fiber } = await setup({ settings: true, connection: true })
+    const shared = ctx.connection.createSharedFetchHandler('/api')
+    const request = () => new Request('http://localhost/api/dsh-emoji-settings/get', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({type:'client-request',rpcId:'lifecycle',method:'dsh-emoji-settings/get',payload:{}}),
+    })
+    await vi.waitFor(async () => expect((await (await shared.fetch(request())).json()).result.ok).toBe(true))
+    await fiber.dispose()
+    expect((await shared.fetch(request())).status).toBe(404)
+    expect(ctx.settings.describe().map(entry => entry.ns)).not.toContain(EMOJI_SETTINGS_NS)
+  })
+  it('兼容顶层 system 的请求', async () => {
+    const { ctx } = await setup()
+    expect(await modelText(ctx, true)).toContain('你好 ![😊](')
+  })
   it('注册 Unicode 表情提示、转写流和真实临时端口素材路由', async () => {
     const { ctx } = await setup()
     expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain(EMOJI_GUIDANCE)

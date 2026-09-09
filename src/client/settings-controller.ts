@@ -4,6 +4,7 @@ import type { ClientConnectionRpc } from '@deepseek-ai/dsh-client-connection/cli
 import {
   DEFAULT_EMOJI_SETTINGS,
   EMOJI_SETTINGS_RPC_CHANNEL,
+  EMOJI_SETTINGS_RPC_PREFIX,
   parseEmojiSettings,
   parseRevision,
   type EmojiMode,
@@ -215,7 +216,7 @@ export class EmojiSettingsController {
   }
 
   private async call(endpoint: string, payload: unknown): Promise<EmojiSettingsDocument> {
-    const result = await this.rpc.call(EMOJI_SETTINGS_RPC_CHANNEL, endpoint, payload)
+    const result = await this.rpc.call(EMOJI_SETTINGS_RPC_CHANNEL, `${EMOJI_SETTINGS_RPC_PREFIX}/${endpoint}`, payload)
     if (!result.ok) throw new EmojiSettingsRequestError(remoteErrorCode(result.error.code, result.error.details))
     const document = parseDocument(result.value)
     if (document === undefined) throw new EmojiSettingsRequestError('invalidResponse')
