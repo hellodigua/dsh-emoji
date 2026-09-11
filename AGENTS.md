@@ -14,6 +14,12 @@
 - 对外文档只正面描述当前要求，不以新旧对比方式暗示历史权限、历史分发方式或非公开阶段。
 - 改动后至少运行 `pnpm typecheck`、`pnpm test`、`pnpm build`、`npm pack --dry-run` 和 `git diff --check`。
 
+## DSH 版本兼容与升级
+
+- 用户提到 DSH 版本兼容、升级适配或升级后回归时，必须使用 [dsh-plugin-upgrade-skill](https://github.com/oh-my-dsh/dsh-plugin-upgrade-skill) 中的 [plugin-upgrade](https://github.com/oh-my-dsh/dsh-plugin-upgrade-skill/blob/main/skills/plugin-upgrade/SKILL.md)。开始前完整读取该入口，再按目标版本读取相关参考卡；本地未安装时从仓库读取，不凭记忆套用旧规则。
+- 按用户意图区分只读检查、已安装插件更新和插件源码迁移；检查请求只输出兼容结论与方案，明确要求适配后按已授权范围执行。该规则不自动授权升级 DSH 主程序、推送或发布。
+- 核对 npm dist-tag 与精确版本，以目标版本的官方源码和实际发行包复核 skill 的建议；区分类型检查、插件挂载和真实功能验证。版本卡缺失或与官方实现冲突时，明确记录验证缺口。
+
 ## 发版规则
 
 - 用户说“发版”时，直接在干净且与远端同步的 `main` 上按 SemVer 更新 `package.json` 和 `CHANGELOG.md`，然后停止并请用户审阅。
