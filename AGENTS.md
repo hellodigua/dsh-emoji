@@ -11,8 +11,8 @@
 - 构建、测试和真实运行以工作区提供的 DSH 源码 checkout 为准，不使用全局 `dsh` 代替源码 CLI。
 - 未经用户另行授权，不创建远程仓库、不推送、不发布 npm 包；Bilibili 素材授权确认前不得公开分发素材。
 - 仓库只记录当前有效的产品事实、兼容范围、用户使用方式和开发要求；调研、迁移、排障、临时环境与旧版本验证等过程性记录留在仓库外部，不进入 README、`.docs`、源码注释、changelog 或提交说明。
-- 对外文档只正面描述当前要求，不以新旧对比方式暗示历史权限、历史分发方式或非公开阶段。
-- 改动后至少运行 `pnpm typecheck`、`pnpm test`、`pnpm build`、`npm pack --dry-run` 和 `git diff --check`。
+- 对外文档描述当前事实，避免夹带内部历史与过程记录。
+- 源码、依赖或打包改动运行 `pnpm typecheck`、`pnpm test`、`pnpm build`、`npm pack --dry-run`；纯文档改动检查链接与 diff。提交前运行 `git diff --check`。
 
 ## DSH 版本兼容与升级
 
