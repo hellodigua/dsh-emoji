@@ -1,11 +1,12 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { clientRequestSchema, type ConnectionRpcHandler } from '@deepseek-ai/dsh-client-connection'
+import { clientRequestSchema } from '@deepseek-ai/dsh-client-connection'
+import type { EmojiSettingsRpcHandler } from './settings.ts'
 import { EMOJI_SETTINGS_RPC_CHANNEL, EMOJI_SETTINGS_RPC_PREFIX } from './settings-model.ts'
 
 const ENDPOINTS = ['get', 'save', 'reset', 'pack-upload', 'pack-remove'] as const
 
 /** Connection owns authentication, origin checks and the buffered body limit. */
-export function registerEmojiSettingsRoutes(ctx: Context, handler: ConnectionRpcHandler): void {
+export function registerEmojiSettingsRoutes(ctx: Context, handler: EmojiSettingsRpcHandler): void {
   for (const endpoint of ENDPOINTS) {
     ctx.effect(() => ctx.connection.fetch.register({
       path: `${EMOJI_SETTINGS_RPC_CHANNEL}/${EMOJI_SETTINGS_RPC_PREFIX}/${endpoint}`,

@@ -2,11 +2,11 @@
 
 ## 目标
 
-让用户从 Web 的「设置 → 插件 → 表情（Whale Emoji）」调整 AI 使用表情的频率，保存后从下一次模型调用开始生效，不要求重启 Host，也不修改 DSH core。
+让用户从 Web 侧栏「插件 → dsh-emoji」调整 AI 使用表情的频率，保存后从下一次模型调用开始生效，不要求重启 Host，也不修改 DSH core。
 
 ## 配置模型
 
-Settings 命名空间为 `dsh-emoji`，当前字段如下：
+Settings 表单使用 Profile entry id `dsh-emoji`，当前字段如下：
 
 | 字段 | 取值 | 默认值 | 作用 |
 | --- | --- | --- | --- |
@@ -16,15 +16,15 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 | `activePack` | 已安装的不可变 `id@version` | `deepseek@8` | 决定新回复把受控 Unicode 表情映射到哪套图片；切换不改历史消息 URL |
 | `packRevision` | 非负整数 | `0` | 内部包目录代际，只用于跨标签失效，不可在卡片中编辑 |
 
-部署配置是 Settings 的 `base` 层，用户保存值是覆盖层；「恢复默认」清空用户层，因此会回到部署配置，再回到 schema 默认值。内置英文策略、Unicode 白名单与内部 key 映射属于代码事实，不写入 Settings；设置声明为 `live`。
+Loader 的 Config 以 `.volatile()` 声明整个配置对象。Settings 将它投影为实时表单，用户保存值写入当前 Profile 的 `cordis.patch.yml`；「恢复默认」保留包目录代际并恢复继承配置及 schema 默认值。更高优先级的 Home 或命令行配置遮蔽写入时，官方配置服务会拒绝保存。内置英文策略、Unicode 白名单与内部 key 映射属于代码事实，不写入配置。
 
 ## 数据流
 
-1. Host half 通过 DSH 0.1.5-alpha.1 的 `SettingsProvider` 服务（`ctx.settings.register()`）注册 `dsh-emoji` 命名空间。
-2. Web Client 注入 `dsh-client-ui-settings-plugins`，并以 `dsh-emoji` Settings namespace 作为 key，在其 keyed `settings.plugin.item` 插槽注册配置卡片。
+1. Host half 读取官方 `Volatile<EmojiSettings>` 配置引用，Settings 服务按 Loader schema 自动发现表单；可选注入中以 `configure({ auto: false }, ctx.fiber)` 声明自有页面策略，Settings 服务缺席不影响表情转写。
+2. Web Client 注入 `dsh-client-ui-plugin-manager`，以包名 `dsh-emoji` 为 key 在 `plugins.bundle.config` 注册配置卡片。卡片在插件详情页默认展开。
 3. Client 通过 `/api` 通道下 `dsh-emoji-settings/*` 的 Connection RPC 执行 `get`、`save`、`reset`、`pack-upload`、`pack-remove`；包操作细节见 [`user-emoji-packs.md`](user-emoji-packs.md)。
 4. 写入携带 Settings revision；陈旧写入返回稳定的 `settings-conflict` 错误码，避免覆盖其他标签页的新值。Host wire message 使用英文 canonical 文案，Client 不直接向用户展示它。
-5. Host watcher 更新内存设置，并触发 `system-prompt/change`。
+5. Loader 提交实时配置后发出 `loader/volatile-update`；模式或附加提示词改变时触发 `system-prompt/change`，读取值始终来自官方配置引用。
 6. 动态 prompt provider 在每次 assembly 时读取最新设置，把启用模式写入 `[dsh-inline-reaction:mode=<mode>]` 请求标记，并将 `customPrompt` 追加到内置策略后；LLM 流开始时固定该请求的 `activePack`。内置提示以 `Unicode=English/中文` 列出 42 个受控输入字符，对应 40 个核心语义 key，不暴露插件包名或内部 key；提示约束本身不保证模型服从。
 7. global `llm/stream` 包装器跨过运行时 scope filter，只处理带上述标记且没有辅助 `purpose` 的主请求；受控 Unicode 表情在安全的 `text-delta` 边界确定性转成当前 Host 的素材 Markdown，待决尾部在 block 结束前收口，并跨 block 累计当前模式的数量。若模型从上下文模仿并直出本插件 Markdown 图片，标准文件名和 `_`→`-` 变体重新解析为 catalog key，再由当前包生成规范 URL；未知文件名删除且不占用数量额度。
 8. 上传或移除包后 Host 递增内部 `packRevision`，沿用 `settings/document-updated` 事件让其他已打开的卡片重读目录；存在未保存草稿时先保留草稿，放弃后再读取 Host，迟到的 refresh 不能覆盖请求发出后新建的草稿。
@@ -35,13 +35,13 @@ Settings 命名空间为 `dsh-emoji`，当前字段如下：
 
 ## 卡片界面一致性
 
-`settings.plugin.item` 是按 Settings namespace 分发的 keyed slot；本插件使用 `dsh-emoji` key，并拥有自己的卡片渲染。卡片外壳遵循 DSH 内置 `PluginCard` 的交互视觉：使用 `@deepseek-ai/dsh-client-ui-primitives` 的 `IconChevronDownOutline14`，展开时旋转 180 度，并具有相同的 hover 边框、展开态背景和 `:focus-visible` 焦点框。所有选择器均以 `data-dsh-emoji-settings-*` 或 `dsh-emoji-settings-*` 命名，只作用于本插件卡片。
+`plugins.bundle.config` 是按 npm 包名分发的官方 keyed slot；本插件使用 `dsh-emoji` key，并拥有自己的卡片渲染。折叠图标使用 `@deepseek-ai/dsh-client-ui-primitives` 的 `IconChevronDownOutlineRegular`。所有选择器均以 `data-dsh-emoji-settings-*` 或 `dsh-emoji-settings-*` 命名，只作用于本插件卡片。
 
 ## 安全边界
 
 - `src/settings-routes.ts` 通过 `connection.fetch.register()` 注册五个精确的 POST 路由，使用官方 Connection envelope schema 校验消息及 endpoint。认证、Host/Origin 检查和缓冲请求体上限由 DSH 的共享 `/api` 通道负责；插件不提供独立鉴权或通用代理。Client 同时要求 `connection.isLoopback`，不能操作的页面只显示不可用状态。
 - RPC 只暴露 `dsh-emoji` 命名空间，不调用 DSH core 通用设置 API，也不扩大其 namespace allowlist。
-- Web Client 不接收文件路径；持久化仍由 DSH Settings provider 负责。
+- Web Client 不接收文件路径；持久化由 DSH Settings／config-editor 负责。
 - `packRevision` 由 Host 保留；普通 save/reset 不能伪造或把它清零。
 - Client bundle 只把 React 与 `react/jsx-runtime` 作为平台 external，避免打包第二份 React。
 - 输出包装器不依赖 `isAgentLoopRequest()` 的模块私有 `WeakSet` 身份，因为树外插件可能解析到另一份 `dsh-llm` 模块；它用稳定的 `purpose` 字段排除压缩和标题调用，再由 `src/request-mode.ts` 从请求已经装配的有效系统提示快照读取私有模式标记（显式 `system` 或最新非空 system 消息），不从用户正文或过期快照启用转写，设置并发变化不会改变正在生成的回答。

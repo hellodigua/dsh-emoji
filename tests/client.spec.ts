@@ -6,7 +6,7 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // 此文件验证插件自己的设置状态和样式；DSH primitives 的根入口还会加载
 // Markdown/KaTeX CSS，在 Node 测试环境中用最小组件替身隔离该平台资源。
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
-  IconChevronDownOutline14: () => null,
+  IconChevronDownOutlineRegular: () => null,
 }))
 
 import {
@@ -46,7 +46,7 @@ afterEach(() => {
 })
 
 describe('Web Client inline style', () => {
-  it('按 Settings namespace 注册 slot（key + id 双契约兼容）', () => {
+  it('按包名注册官方 Bundle 配置插槽', () => {
     const register = vi.fn(() => vi.fn())
     const rpc = {
       call: vi.fn().mockResolvedValue({
@@ -70,11 +70,8 @@ describe('Web Client inline style', () => {
 
     expect(register).toHaveBeenCalledTimes(1)
     expect(register.mock.calls[0]?.[0]).toMatchObject({
-      name: 'settings.plugin.item',
+      name: 'plugins.bundle.config',
       key: EMOJI_SETTINGS_NAMESPACE,
-      // newer runtimes treat settings.plugin.item as a list slot and require id;
-      // rc.7 keyed runtimes still read key — both are passed on purpose
-      id: EMOJI_SETTINGS_NAMESPACE,
     })
     expect(register.mock.calls[0]?.[0]).not.toHaveProperty('order')
   })

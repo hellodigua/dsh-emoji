@@ -23,7 +23,7 @@ images/<canonical-key>.png
 4. Host 先写 `$DSH_HOME/emoji-packs/<id>/.install-*`，全部成功后原子 rename 到 `<version>/`；同一个 `id@version` 只允许完全相同的归档幂等重装，内容变化必须升级版本。
 5. 安装目录保存插件生成的 `.dsh-emoji-pack.json`。Host 重启扫描时重新验证其中的 keySet、文件名、MIME、尺寸和大小，损坏或越界 manifest 不进入索引；为避免升级后丢失既有用户包，只在读取旧内部 manifest 时把缺失的 `keySet` 兼容为 `dsh-emoji-core@1`。
 
-Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在中文设置页显示为“大肥鱼(内置)”。内置包不可移除，因此选中它时不渲染“移除”按钮；用户包被选中时才显示该操作。用户包列表来自文件系统索引，不把图片或 catalog 写进 `settings.yaml`。旧配置缺少 `activePack` 时由 schema 默认值自动迁移；配置引用已损坏或被外部移除的包时，设置 RPC 和转写链都 fail closed 回退内置包。
+Settings 只保存 `activePack` 引用，默认 `deepseek@8`，该内置包在中文设置页显示为“大肥鱼(内置)”。内置包不可移除，因此选中它时不渲染“移除”按钮；用户包被选中时才显示该操作。用户包列表来自文件系统索引，不把图片或 catalog 写进 Profile 配置。配置缺少 `activePack` 时采用 schema 默认值；配置引用已损坏或被外部移除的包时，设置 RPC 和转写链都 fail closed 回退内置包。
 
 ## 存储目录归属
 

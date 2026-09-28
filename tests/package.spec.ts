@@ -39,7 +39,7 @@ describe('Profile Bundle package', () => {
       '@deepseek-ai/dsh-client-connection',
       '@deepseek-ai/dsh-client-locale',
       '@deepseek-ai/dsh-client-ui-primitives',
-      '@deepseek-ai/dsh-client-ui-settings-plugins',
+      '@deepseek-ai/dsh-client-ui-plugin-manager',
       '@deepseek-ai/dsh-api-remotes',
     ]))
     expect(packageJson.exports['./client'].default).toBe('./lib/client.js')
@@ -47,29 +47,31 @@ describe('Profile Bundle package', () => {
 
   it('通过 npm peer 接入 DSH 公共契约，并用精确发行版开发验证', () => {
     expect(packageJson.dsh.compatibility.dshReleases).toEqual({
-      '0.1.3-alpha.1': 'unknown',
-      '0.1.3-alpha.2': 'unknown',
-      '0.1.5-alpha.1': 'compatible',
+      '0.1.7-rc.2': 'unknown',
     })
     const dshPeers = Object.entries(packageJson.peerDependencies)
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
     for (const [, range] of dshPeers) {
-      expect(range).toBe('^0.1.5-alpha.1')
+      expect(range).toBe('^0.1.7-rc.2')
     }
-    expect(packageJson.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.1')
-    expect(packageJson.peerDependencies['@deepseek-ai/schemastery']).toBe('^3.18.1')
+    expect(packageJson.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.4')
+    expect(packageJson.peerDependencies['@deepseek-ai/cordis-plugin-loader']).toBe('^1.0.5')
+    expect(packageJson.peerDependencies['@deepseek-ai/schemastery']).toBe('^3.18.4')
     for (const [name] of dshPeers) {
-      expect(packageJson.devDependencies[name]).toBe('0.1.5-alpha.1')
+      expect(packageJson.devDependencies[name]).toBe('0.1.7-rc.2')
     }
-    expect(packageJson.devDependencies['@deepseek-ai/cordis']).toBe('4.0.2')
-    expect(packageJson.devDependencies['@deepseek-ai/schemastery']).toBe('3.18.2')
+    expect(packageJson.devDependencies['@deepseek-ai/cordis']).toBe('4.0.4')
+    expect(packageJson.devDependencies['@deepseek-ai/cordis-plugin-loader']).toBe('1.0.5')
+    expect(packageJson.devDependencies['@deepseek-ai/schemastery']).toBe('3.18.4')
     expect(JSON.stringify(packageJson)).not.toContain('link:../test-hellodigua')
     expect(pnpmWorkspace).toMatch(/^autoInstallPeers: true$/m)
     expect(pnpmWorkspace).toMatch(/^nodeLinker: hoisted$/m)
     expect(packageJson.peerDependencies).not.toHaveProperty('@deepseek-ai/dsh-client-ui-plugin-config')
     expect(packageJson.devDependencies).not.toHaveProperty('@deepseek-ai/dsh-client-ui-plugin-config')
     expect(packageJson.dsh.client.inject).not.toContain('@deepseek-ai/dsh-client-ui-plugin-config')
+    expect(packageJson.peerDependencies).not.toHaveProperty('@deepseek-ai/dsh-client-ui-settings-plugins')
+    expect(packageJson.dsh.client.inject).not.toContain('@deepseek-ai/dsh-client-ui-settings-plugins')
   })
 
   it('发布列表包含运行时需要的 Host、Client、patch 和资产', () => {
@@ -110,8 +112,8 @@ describe('Profile Bundle package', () => {
 
   it('插件卡片使用 DSH 公共折叠图标，不再渲染平台相关的文本箭头', () => {
     const source = readFileSync(new URL('../src/client/EmojiSettingsCard.tsx', import.meta.url), 'utf8')
-    expect(source).toContain("import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'")
-    expect(source).toContain('<IconChevronDownOutline14 className="dsh-emoji-settings-chevron" />')
+    expect(source).toContain("import { IconChevronDownOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'")
+    expect(source).toContain('<IconChevronDownOutlineRegular className="dsh-emoji-settings-chevron" />')
     expect(source).not.toMatch(/[⌃⌄]/)
   })
 

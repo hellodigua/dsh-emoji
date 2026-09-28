@@ -7,7 +7,8 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import type { GenerateOptions } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-client-connection'
-import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/cordis-plugin-loader'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
 import {
   EMOJI_API_ROOT, handleEmojiAssetRequest,
 } from './assets.ts'
@@ -25,7 +26,6 @@ import {
 } from './settings-model.ts'
 import {
   createEmojiSettingsRpcHandler,
-  EMOJI_SETTINGS_NS,
   EmojiSettingsSchema,
 } from './settings.ts'
 import { BUILTIN_PACK_REF } from './pack-model.ts'
@@ -35,7 +35,8 @@ import { registerEmojiSettingsRoutes } from './settings-routes.ts'
 
 export const name = 'dsh-emoji'
 export const inject = ['llm', 'systemPrompt']
-export const Config = EmojiSettingsSchema
+export type Config = Volatile<EmojiSettings>
+export const Config = EmojiSettingsSchema.volatile()
 
 const REACTION_MEANINGS = ACCEPTED_REACTION_EMOJIS
   .map(({ emoji, catalog }) => `${emoji}=${catalog.labels.en}/${catalog.labels.zh}`)
@@ -71,25 +72,22 @@ function localEmojiUrl(ctx: Context, packs: EmojiPackStore, packRef: string, emo
 /** 挂载动态提示词、LLM 流转写、持久化设置 RPC 和静态素材路由。 */
 export async function applyWithPackStore(
   ctx: Context,
-  config: EmojiSettings | undefined,
+  config: Config,
   packs: EmojiPackStore,
 ): Promise<void> {
   await packs.initialize()
-  const baseSettings = EmojiSettingsSchema(config)
-  let currentSettings = baseSettings
-
-  const adoptSettings = (next: EmojiSettings): void => {
-    if (next.mode === currentSettings.mode
-      && next.customPrompt === currentSettings.customPrompt
-      && next.activePack === currentSettings.activePack) return
-    currentSettings = next
-    ctx.emit('system-prompt/change')
-  }
+  let promptSettings = config.get()
+  ctx.on('loader/volatile-update', () => {
+    const next = config.get()
+    const changed = next.mode !== promptSettings.mode || next.customPrompt !== promptSettings.customPrompt
+    promptSettings = next
+    if (changed) ctx.emit('system-prompt/change')
+  })
 
   ctx.effect(() => ctx.systemPrompt.section({
     name: 'dsh-emoji:guidance',
     order: 175,
-    text: () => buildEmojiGuidance(currentSettings),
+    text: () => buildEmojiGuidance(config.get()),
   }), 'dsh-emoji: guidance')
 
   ctx.on('llm/stream', (options: GenerateOptions, next) => {
@@ -99,7 +97,7 @@ export async function applyWithPackStore(
     if (options.purpose !== undefined) return source
     const mode = reactionModeFromRequest(options)
     if (mode === undefined) return source
-    const requestPack = currentSettings.activePack
+    const requestPack = config.get().activePack
     return rewriteReactionStream(source, {
       imageUrl: emoji => localEmojiUrl(ctx, packs, requestPack, emoji),
       maxEmojis: EMOJI_PER_TURN_LIMIT[mode],
@@ -107,22 +105,10 @@ export async function applyWithPackStore(
   }, { global: true })
 
   ctx.inject(['settings'], (settingsCtx) => {
-    const settingsScope = settingsCtx.settings.register(
-      EMOJI_SETTINGS_NS,
-      EmojiSettingsSchema,
-      { base: baseSettings, applies: 'live' },
-    )
-    settingsCtx.effect(() => {
-      adoptSettings(settingsScope.get())
-      const unwatch = settingsScope.watch(next => { adoptSettings(next) })
-      return () => {
-        unwatch()
-        adoptSettings(baseSettings)
-      }
-    }, 'dsh-emoji: live settings')
+    settingsCtx.effect(() => settingsCtx.settings.configure({ auto: false }, ctx.fiber), 'dsh-emoji: settings presentation')
 
     settingsCtx.inject(['connection'], (connectionCtx) => {
-      const handler = createEmojiSettingsRpcHandler(settingsCtx.settings, packs, adoptSettings)
+      const handler = createEmojiSettingsRpcHandler(settingsCtx.settings, packs)
       registerEmojiSettingsRoutes(connectionCtx, handler)
     })
   })
@@ -136,7 +122,7 @@ export async function applyWithPackStore(
   })
 }
 
-export async function apply(ctx: Context, config?: EmojiSettings): Promise<void> {
+export async function apply(ctx: Context, config: Config): Promise<void> {
   await applyWithPackStore(ctx, config, new EmojiPackStore())
 }
 

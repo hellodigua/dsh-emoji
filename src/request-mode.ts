@@ -6,10 +6,7 @@ export function reactionModeFromRequest(options: Pick<GenerateOptions, 'system' 
   // Explicit one-shot/legacy prompts take precedence, including an empty prompt.
   if (options.system !== undefined) return reactionModeFromPrompt(options.system)
 
-  const systems = options.messages.filter(message => message.role === 'system')
-  const owned = systems.filter(message => message.source?.kind === 'plugin'
-    && message.source.plugin === '@deepseek-ai/dsh-system-prompt')
-  const snapshots = owned.length > 0 ? owned : systems
+  const snapshots = options.messages.filter(message => message.role === 'system')
   for (let index = snapshots.length - 1; index >= 0; index--) {
     const text = snapshots[index].content
       .filter(block => block.type === 'text')

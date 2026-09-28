@@ -3,7 +3,7 @@
 import type { ConnectionRpcHandler } from '@deepseek-ai/dsh-client-connection'
 import type { ConnectionRpcResult as RpcResult } from '@deepseek-ai/dsh-client-connection'
 import {
-  SettingsConflictError, type SettingsNamespace, type SettingsProvider,
+  SettingsConflictError, type SettingsNamespace, type SettingsForms,
 } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import {
@@ -23,6 +23,9 @@ import { EmojiPackError, EmojiPackStore } from './packs.ts'
 import { BUILTIN_PACK_REF, EMOJI_PACK_REF_PATTERN } from './pack-model.ts'
 
 export const EMOJI_SETTINGS_NS = EMOJI_SETTINGS_NAMESPACE as SettingsNamespace
+export type EmojiSettingsStore = Pick<SettingsForms, 'describe' | 'replace' | 'writable'>
+/** JSON-only handler behind Connection's authenticated Fetch routes. */
+export type EmojiSettingsRpcHandler = (endpoint: string, payload: unknown, signal: AbortSignal) => ReturnType<ConnectionRpcHandler>
 
 /** Loader 配置与 Settings 服务共用同一份运行时校验。 */
 export const EmojiSettingsSchema: z<EmojiSettings> = z.object({
@@ -89,7 +92,7 @@ function rejected(error: unknown): RpcResult<never> {
 
 /** 读取当前有效值与并发写 revision，供插件设置页使用。 */
 export function describeEmojiSettings(
-  settings: SettingsProvider,
+  settings: EmojiSettingsStore,
   packs: EmojiPackStore = new EmojiPackStore(),
 ): EmojiSettingsDocument {
   const descriptor = settings.describe({ redactSecrets: true })
@@ -113,10 +116,10 @@ export function describeEmojiSettings(
  * DSH core 的通用设置白名单；物理通道由 Connection 执行来源检查和认证。
  */
 export function createEmojiSettingsRpcHandler(
-  settings: SettingsProvider,
+  settings: EmojiSettingsStore,
   packs: EmojiPackStore = new EmojiPackStore(),
   onCommitted?: (value: EmojiSettings) => void,
-): ConnectionRpcHandler {
+): EmojiSettingsRpcHandler {
   let mutationTail = Promise.resolve()
   const exclusive = async <T>(operation: () => Promise<T>): Promise<T> => {
     const previous = mutationTail
