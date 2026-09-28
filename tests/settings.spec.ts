@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { strToU8, zipSync } from 'fflate'
-import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
+import { configurationFixture } from './configuration-fixture.ts'
 import {
   buildEmojiGuidance,
   DEFAULT_CUSTOM_PROMPT,
@@ -21,20 +21,6 @@ import { EmojiPackStore } from '../src/packs.ts'
 import { EMOJIS } from '../src/catalog.ts'
 import { CANONICAL_REACTION_EMOJI_BY_KEY } from '../src/reaction-emoji.ts'
 
-class MemorySettings extends SettingsProvider {
-  readonly writable = true
-  private document: Record<string, unknown> = {}
-
-  protected load(): Promise<Record<string, unknown>> {
-    return Promise.resolve(structuredClone(this.document))
-  }
-
-  protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
-    this.document[ns] = structuredClone(section)
-    return Promise.resolve()
-  }
-}
-
 let context: Context | undefined
 let packRoot: string | undefined
 
@@ -46,12 +32,7 @@ afterEach(async () => {
 })
 
 async function setup() {
-  context = new Context()
-  await context.plugin(MemorySettings)
-  context.settings.register(EMOJI_SETTINGS_NS, EmojiSettingsSchema, {
-    base: DEFAULT_EMOJI_SETTINGS,
-    applies: 'live',
-  })
+  context = (await configurationFixture()).ctx
   return context
 }
 
@@ -110,6 +91,20 @@ describe('emoji display size settings', () => {
 })
 
 describe('plugin-owned settings RPC', () => {
+  it('通过官方配置服务导入已有设置，并在重启后恢复当前 Profile 配置', async () => {
+    const desired = { ...DEFAULT_EMOJI_SETTINGS, mode: 'frequent' as const, displaySize: 'small' as const, customPrompt: 'Keep it brief.' }
+    const { ctx, home, start, profile } = await configurationFixture({ legacy: { 'dsh-emoji': desired } })
+    await vi.waitFor(() => expect(ctx.settings.describe().find(row => row.ns === EMOJI_SETTINGS_NS)?.value).toEqual(desired))
+    expect(await readFile(join(home, 'settings.yaml.imported'), 'utf8')).toContain('Keep it brief.')
+    const fiber = [...ctx.loader.entries()].find(row => row.options.id === EMOJI_SETTINGS_NS)?.fiber
+    await ctx.settings.update(EMOJI_SETTINGS_NS, { displaySize: 'xlarge' })
+    expect([...ctx.loader.entries()].find(row => row.options.id === EMOJI_SETTINGS_NS)?.fiber).toBe(fiber)
+    expect(await readFile(profile.patchPath, 'utf8')).toContain('xlarge')
+    await ctx.fiber.dispose()
+    const restored = await start()
+    expect(restored.settings.describe().find(row => row.ns === EMOJI_SETTINGS_NS)?.value).toEqual({ ...desired, displaySize: 'xlarge' })
+  })
+
   it('读取、revision 保存、冲突拒绝和恢复默认形成闭环', async () => {
     const ctx = await setup()
     const committed: unknown[] = []

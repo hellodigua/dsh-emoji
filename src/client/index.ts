@@ -2,7 +2,7 @@
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
+import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import {
@@ -184,11 +184,10 @@ export function apply(ctx: ClientContext): void {
   }, 'dsh-emoji: settings invalidations')
 
   // The namespace identifies this card in the Host schema and Client registry.
-  ctx.slots.inject('settings.plugin.item', () => {
+  ctx.slots.inject('plugins.bundle.config', () => {
     const settingsSlotOptions = {
-      name: 'settings.plugin.item' as const,
+      name: 'plugins.bundle.config' as const,
       key: EMOJI_SETTINGS_NAMESPACE,
-      id: EMOJI_SETTINGS_NAMESPACE,
       locale: EMOJI_LOCALE_NS,
       inject: () => ({
         hooks: { emojiSettings: controller },

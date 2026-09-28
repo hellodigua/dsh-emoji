@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import { type ConnectionRpcHandler } from '@deepseek-ai/dsh-client-connection';
+import type { EmojiSettingsRpcHandler } from './settings.ts';
 /** Connection owns authentication, origin checks and the buffered body limit. */
-export declare function registerEmojiSettingsRoutes(ctx: Context, handler: ConnectionRpcHandler): void;
+export declare function registerEmojiSettingsRoutes(ctx: Context, handler: EmojiSettingsRpcHandler): void;
 //# sourceMappingURL=settings-routes.d.ts.map

@@ -1,11 +1,11 @@
-/** “设置 → 插件”中的 dsh-emoji 配置卡片。 */
+/** “插件 → dsh-emoji”详情页中的配置卡片。 */
 
 import { useState, type CSSProperties } from 'react'
 import type {
   InjectFace, PropsLocale, PropsRuntime,
 } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
+import { IconChevronDownOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import {
   EMOJI_DISPLAY_SIZES, EMOJI_DISPLAY_SIZE_EM, EMOJI_MODES, MAX_CUSTOM_PROMPT_LENGTH,
   type EmojiDisplaySize, type EmojiMode,
@@ -30,7 +30,7 @@ export interface EmojiSettingsCardFace {
 }
 
 export type EmojiSettingsCardProps =
-  PropsRuntime<'settings.plugin.item'>
+  PropsRuntime<'plugins.bundle.config'>
   & PropsLocale<typeof EMOJI_LOCALE_NS>
   & InjectFace<EmojiSettingsCardFace>
 
@@ -195,7 +195,7 @@ function modeSummary(state: EmojiSettingsSnapshot, t: EmojiSettingsCardProps['t'
 
 /** 渲染带暂存、保存、放弃和恢复默认能力的插件卡片。 */
 export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const state = props.useEmojiSettings(snapshot => snapshot)
   const editable = state.status === 'ready' && state.writable && !state.saving && !state.packBusy
   const revisionBlocked = state.error === 'conflict'
@@ -219,7 +219,7 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
         </span>
         {state.dirty ? <span style={styles.badge}>{props.t('unsaved')}</span> : null}
         <span style={styles.badge}>{modeSummary(state, props.t)}</span>
-        <IconChevronDownOutline14 className="dsh-emoji-settings-chevron" />
+        <IconChevronDownOutlineRegular className="dsh-emoji-settings-chevron" />
       </button>
       {open
         ? (

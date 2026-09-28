@@ -6,8 +6,8 @@
 2. Agent 在面向用户的自然语言正文中，根据上下文选择一个规范 Unicode 表情；智能模式只在表情能改善表达时使用，允许零张；高频模式要求所有对话回复都加入一个匹配情绪的表情，并把它放在最相关的句子或短段落后。智能模式最多保留 3 张，高频模式最多保留 4 张，相同表情可以在正文不同位置重复。
 3. `src/index.ts` 用 global 监听跨过运行时 scope filter，以无辅助 `purpose` + 有效系统提示的私有模式标记界定主请求。`src/request-mode.ts` 支持显式 `system` 和 `messages` 中最新非空的官方 system 快照；最新快照无标记即关闭转写，忽略历史模式、空尾节点和用户正文；`src/reactions.ts` 按完整 grapheme cluster 在安全的 `text-delta` 边界精确转写 40 个规范字符与两个明确别名，并跨 block 累计数量及间隔状态。转写前用 `mdast-util-from-markdown` 取得 CommonMark AST 的真实代码、链接和图片节点边界，另行保护裸 HTTP(S) URL；尚未闭合的流式片段由状态扫描器跟踪链接目标的括号层级与 HTML 属性引号，普通方括号在闭合且出现非链接后缀后立即恢复输出，避免提前发出之后需要撤回的内容或无意义地扣住后文。相邻受控表情／插件图片只保留第一张，多个表情必须由字母、汉字或数字等有效正文分隔；未知 Unicode、肤色或性别变体和双冒号文本保持原样，不做近似匹配。模型直出的本插件 Markdown 图片会按标准文件名重新收敛到 catalog 和当前包 URL，未知文件名删除；代码、链接、普通外部图片和转义内容不改写。
 4. 转写请求开始时固定当前 `activePack`；结果引用当前 Host 的 `/api/dsh-emoji/assets/<pack-id>/<version>/<file>` 绝对 loopback URL，缺失包 fail closed 回退内置 `deepseek@8`。
-5. `src/packs.ts` 索引内置包和 `$DSH_HOME/emoji-packs/` 用户包；`src/assets.ts` 通过 DSH 0.1.5-alpha.1 的 `webServer` 服务注册路由并只提供索引白名单内的 PNG。v0.1 的两段式内置 URL 继续兼容。
-6. `src/client/index.ts` 依赖 `dsh-client-ui-settings-plugins` 提供的 keyed `settings.plugin.item` 插槽，以 `dsh-emoji` Settings namespace 作为 key 注册卡片，并只对 dsh-emoji 路由图片应用可配置的四档行内尺寸；默认 `normal` 为 `1.5em`，基线偏移随档位计算。
+5. `src/packs.ts` 索引内置包和 `$DSH_HOME/emoji-packs/` 用户包；`src/assets.ts` 通过 DSH 的 `webServer` 服务注册路由并只提供索引白名单内的 PNG。v0.1 的两段式内置 URL 继续兼容。
+6. `src/client/index.ts` 依赖 `dsh-client-ui-plugin-manager` 提供的 keyed `plugins.bundle.config` 插槽，以包名 `dsh-emoji` 注册详情页卡片，并只对 dsh-emoji 路由图片应用可配置的四档行内尺寸；默认 `normal` 为 `1.5em`，基线偏移随档位计算。
 
 ## 素材链路
 
@@ -33,9 +33,9 @@ python3 scripts/slice-deepseek-sheet.py \
 ## 配置链路
 
 - `src/settings-model.ts` 定义 Host/Client 共用文档与 RPC 契约，包括关闭、智能、高频三档模式、默认留空的 `customPrompt`、默认 `deepseek@8` 的 `activePack` 和 Host 维护的包目录 `packRevision`；内置英文策略不进入持久化设置。
-- `src/settings.ts` 通过 DSH 0.1.5-alpha.1 的 `SettingsProvider` 注册 Settings namespace，并由 `src/settings-routes.ts` 注册共享 `/api` 下的 get/save/reset 和包管理 RPC；Connection 统一负责认证、来源检查及请求体限制；wire message 使用英文 canonical 文案，客户端依赖稳定错误码而不是 message。
+- `src/index.ts` 暴露 volatile Config，`src/settings.ts` 经 `SettingsForms` 读取和写入 Loader 配置投影，由 ConfigEditor 保存当前 Profile 的覆盖；`src/settings-routes.ts` 注册共享 `/api` 下的 get/save/reset 和包管理 RPC。Connection 统一负责认证、来源检查及请求体限制；wire message 使用英文 canonical 文案，客户端依赖稳定错误码而不是 message。
 - `src/client/settings-controller.ts` 管理 revision、草稿、网络竞态和有限错误状态；`locales.ts` 以英文定义完整键集合并检查中文翻译等价，`EmojiSettingsCard.tsx` 的全部可见文案都通过 locale seat 展示。附加提示词留空时保留内置规则，并可把当前 UI locale 的推荐示例一键写入草稿，不自动持久化。
-- 设置 watcher 触发 `system-prompt/change`，下一次模型请求读取新模式与自定义提示词，无需重启。
+- `loader/volatile-update` 在模式或自定义提示词变化时触发 `system-prompt/change`；下一次模型请求读取当前配置，无需重载插件。尺寸和包选择变化不触发提示词失效。
 
 ## 关键验证
 
@@ -54,6 +54,6 @@ python3 scripts/slice-deepseek-sheet.py \
 
 ## DSH 兼容边界
 
-- 当前开发与验证基线为 `0.1.5-alpha.1`；peerDependencies 表达公共模块的部署要求，精确的 devDependencies 固定本地类型检查和测试基线。逐版本兼容状态以 `package.json#dsh.compatibility.dshReleases` 为准，未验证版本保持 `unknown`。构建依赖通过公开 npm 安装，禁止用同级源码 checkout 的 `link:` 依赖冒充兼容性验证。
+- 当前开发基线为 `0.1.7-rc.2`；peerDependencies 表达公共模块的部署要求，精确的 devDependencies 固定本地类型检查和测试基线。逐版本兼容状态以 `package.json#dsh.compatibility.dshReleases` 为准，未完成验收的版本保持 `unknown`。构建依赖通过公开 npm 安装，禁止用同级源码 checkout 的 `link:` 依赖冒充兼容性验证。
 - `dsh-api-gateway`、`dsh-invariants`、`dsh-typert-registry` 与 `dsh-scope` 保持同一精确发行版的公共类型身份；最终兼容性需要构建产物在精确 DSH npm 运行时下完成 Host Boot、Client 设置、素材、真实模型和生命周期验证。
 - DSH 再次修改客户端设置包、Cordis 服务名或 Settings 公共类型时，应先更新 peer 范围并重新执行完整交付检查。

@@ -40,7 +40,7 @@ dsh plugin --profile web add dsh-emoji
 
 ## 调整 AI 的表情频率
 
-安装并重启 Web Host 后，打开「设置 → 插件 → 表情（Whale Emoji）」：
+安装并重启 Web Host 后，打开侧栏「插件 → dsh-emoji」：
 
 - `关闭`：不使用表情。
 - `智能`：仅在表情确实有助于表达时自然使用，每回合最多 3 张，默认选项。
@@ -95,7 +95,7 @@ sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 
 ## 兼容性
 
-当前验证版本为 npm `@deepseek-ai/dsh@0.1.5-alpha.1`，需要 Node.js `^22.19.0 || >=24`。本地开发固定精确 DSH 类型链，部署时由 Web Profile 提供共享运行时；逐版本兼容状态记录在 `package.json` 的 `dsh.compatibility.dshReleases` 中。
+需要 DSH `0.1.7-rc.2` 或满足 peer 范围的版本，以及 Node.js `^22.19.0 || >=24`。本地开发固定精确 DSH 类型链，部署时由 Web Profile 提供共享运行时；已验证版本记录在 `package.json` 的 `dsh.compatibility.dshReleases` 中。设置保存到当前 Profile 的 `cordis.patch.yml`，表情素材保存在 DSH Home 中。
 
 ## 本地开发
 

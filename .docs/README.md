@@ -7,7 +7,7 @@
 - 语言：TypeScript、ESM、Node.js `^22.19.0 || >=24`；切片脚本使用 Python 与 Pillow。
 - 框架/库：Cordis、React、DSH llm/system-prompt/settings/connection/host-webserver、mdast CommonMark 解析器。
 - 构建与依赖管理：pnpm 11、TypeScript、tsdown
-- 测试：Vitest、JSDOM、npm 发布的 DSH 0.1.5-alpha.1 集成验证
+- 测试：Vitest、JSDOM、DSH `0.1.7-rc.2` 公共 npm 模块集成验证
 
 # 关键功能
 
@@ -16,14 +16,14 @@
 - `/api/dsh-emoji/assets/` 按运行时表情包索引白名单提供 PNG，内置包仍来自发布产物。
 - v0.2.0 支持从设置页上传实现 `dsh-emoji-core@1` 中 40 个稳定 key 的 PNG ZIP 表情包，按不可变 `id@version` 保存到 `$DSH_HOME/emoji-packs/`，并可预览、启用和软移除；新上传包必须声明 `keySet`。
 - `./client` 注入可释放样式，把插件图片显示为小、正常、偏大、大四档行内尺寸；默认“正常”为 `1.5em`。
-- 「设置 → 插件 → 表情（Whale Emoji）」完整支持 DSH 的中文和英文界面，横向提供关闭、智能、高频三档策略，以及默认留空、最多 4000 字符的附加提示词；空白时明确说明内置规则仍生效，并可一键填入本地化示例继续修改。
-- `dsh-emoji` Settings 命名空间持久化配置；共享 `/api` 下的认证 RPC 只读写本插件命名空间。
+- 「插件 → dsh-emoji」详情页完整支持 DSH 的中文和英文界面，横向提供关闭、智能、高频三档策略，以及默认留空、最多 4000 字符的附加提示词；空白时明确说明内置规则仍生效，并可一键填入本地化示例继续修改。
+- Loader Config 是配置事实来源，SettingsForms 投影 `dsh-emoji` 配置条目，由 ConfigEditor 持久化到当前 Profile 的 `cordis.patch.yml`；共享 `/api` 下的认证 RPC 只读写本插件配置。
 - Host RPC 返回稳定错误码与英文 canonical message；Client controller 把错误收敛为有限状态，设置卡片再按当前 DSH locale 显示。
 - system prompt 随设置实时更新；请求内的模式标记决定该次流是否转写。
 - 智能模式允许零张且在程序层最多保留 3 张表情；高频模式要求所有对话回复都加入一个匹配情绪的表情，程序最多保留 4 张。一张通常足够，多张之间必须存在有效正文。40 个规范 Unicode 字符和 `😄`／`🙂` 两个明确别名会被转写；其他 Unicode、双冒号文本和代码／链接内容保持原样。
 - 切片脚本按 SHA-256 识别当前 `8×5` 正面鲸鱼完整版总览图，共维护 40 张 `128×128 RGBA PNG`。
 - Profile Bundle 同时装配 Host half 与 Web Client half。
-- 当前插件开发和验证基线为 DSH `0.1.5-alpha.1`：Web 配置卡片按 Settings namespace 接入 `dsh-client-ui-settings-plugins` 的 keyed slot，素材路由依赖 `webServer`，设置服务使用 `SettingsProvider`。
+- 当前插件开发基线为 DSH `0.1.7-rc.2`：Web 配置卡片以包名接入 `dsh-client-ui-plugin-manager` 的 `plugins.bundle.config` 插槽，素材路由依赖 `webServer`，配置使用 volatile Config 与 `SettingsForms`。
 
 # 目录结构
 
@@ -68,7 +68,7 @@
 
 # 当前验证状态
 
-- DSH peers 使用 `^0.1.5-alpha.1`；本地开发依赖固定为精确 `0.1.5-alpha.1`，部署由 Web Profile 提供共享运行时。精确发行版的声明见 `package.json#dsh.compatibility.dshReleases`。
+- DSH peers 使用 `^0.1.7-rc.2`；本地开发依赖固定为精确 `0.1.7-rc.2`，部署由 Web Profile 提供共享运行时。精确发行版的声明见 `package.json#dsh.compatibility.dshReleases`。
 - 自动化检查覆盖类型、包结构、系统消息快照、设置路由、状态竞态、PNG 校验、40 项规范映射、两个输入别名、多码点 grapheme、Unicode 原文保留及 CommonMark 边界。
 - 40 张切片均为 `128×128 RGBA PNG`，四角透明。
 - system prompt 使用 `[dsh-inline-reaction:mode=…]` 私有标记，不向模型暴露插件包名或内部 key；智能模式允许零张，高频模式要求所有对话回复都加入一个匹配反应，并提供完整的 42 项 `Unicode=English/中文` 输入目录。Host 只精确转写白名单字符，不做情绪推断或兜底；相邻受控表情、模型直出的插件图片、未知 Unicode 与 Markdown 边界由转写器独立处理。模型是否遵循频率仍属于概率行为。

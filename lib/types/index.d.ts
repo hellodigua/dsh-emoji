@@ -2,18 +2,19 @@
  * DSH 行内表情插件 Host half：情绪标签提示、LLM 流转写、设置和 PNG 路由。
  * @module dsh-emoji
  */
-import type { Context } from '@deepseek-ai/cordis';
+import type { Context, Volatile } from '@deepseek-ai/cordis';
 import { type EmojiSettings } from './settings-model.ts';
 import { EmojiPackStore } from './packs.ts';
 export declare const name = "dsh-emoji";
 export declare const inject: string[];
-export declare const Config: import("@deepseek-ai/schemastery").default<EmojiSettings>;
+export type Config = Volatile<EmojiSettings>;
+export declare const Config: import("@deepseek-ai/schemastery").default<NoInfer<EmojiSettings>, NoInfer<EmojiSettings>, "volatile">;
 /** 根据实时配置生成下一次模型调用看到的表情策略。 */
 export declare function buildEmojiGuidance(settings: EmojiSettings): string;
 export declare const EMOJI_GUIDANCE: string;
 /** 挂载动态提示词、LLM 流转写、持久化设置 RPC 和静态素材路由。 */
-export declare function applyWithPackStore(ctx: Context, config: EmojiSettings | undefined, packs: EmojiPackStore): Promise<void>;
-export declare function apply(ctx: Context, config?: EmojiSettings): Promise<void>;
+export declare function applyWithPackStore(ctx: Context, config: Config, packs: EmojiPackStore): Promise<void>;
+export declare function apply(ctx: Context, config: Config): Promise<void>;
 export { CATALOG_SOURCE_REVISION, EMOJIS, emojiByAsset, emojiById } from './catalog.ts';
 export { REACTION_PROMPT_PREFIX, reactionModeFromPrompt, rewriteReactionEmojiWithLimit, rewriteReactionStream, type ReactionEmojiRewriteResult, type ReactionStreamRewriteOptions, } from './reactions.ts';
 export { ACCEPTED_REACTION_EMOJIS, CANONICAL_REACTION_EMOJI_BY_KEY, CANONICAL_REACTION_EMOJIS, REACTION_EMOJI_ALIASES, canonicalReactionEmoji, catalogEmojiByUnicode, type EmojiKey, } from './reaction-emoji.ts';

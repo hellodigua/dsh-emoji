@@ -28,7 +28,7 @@ To try a prerelease, replace the package name in the installation command with `
 
 ## Adjusting emoji frequency
 
-After installation and a Web Host restart, open **Settings → Plugins → Whale Emoji**:
+After installation and a Web Host restart, open **Plugins → dsh-emoji** in the sidebar:
 
 - **Off**: do not use emoji.
 - **Smart**: use emoji only when it meaningfully helps express emotion, up to 3 per turn. This is the default.
@@ -83,7 +83,7 @@ User packs live under `$DSH_HOME/emoji-packs/` (default `~/.dsh/emoji-packs/`), 
 
 ## Compatibility
 
-The verified DSH release is npm `@deepseek-ai/dsh@0.1.5-alpha.1`, with Node.js `^22.19.0 || >=24`. Development pins the exact DSH type graph; the Web Profile supplies the shared runtime. Per-release compatibility is recorded in `package.json` under `dsh.compatibility.dshReleases`.
+Requires DSH `0.1.7-rc.2` or a version admitted by the peer ranges, with Node.js `^22.19.0 || >=24`. Development pins the exact DSH type graph; the Web Profile supplies the shared runtime. Verified releases are recorded in `package.json` under `dsh.compatibility.dshReleases`. Settings persist in the active Profile's `cordis.patch.yml`; image packs live in DSH Home.
 
 ## Local development
 

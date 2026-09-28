@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest'
+import { createSystemMessage, createUserMessage, createAssistantMessage, createDeveloperMessage, type RequestMessage } from '@deepseek-ai/dsh-llm'
 import { reactionModeFromRequest } from '../src/request-mode.ts'
 
 const auto = '[dsh-inline-reaction:mode=auto]'
 const frequent = '[dsh-inline-reaction:mode=frequent]'
-const message = (text: string, role = 'system', plugin = '@deepseek-ai/dsh-system-prompt') => ({
-  id: 'test', role, source: { kind: 'plugin', plugin }, content: [{ type: 'text', text }],
-})
-const mode = (messages: ReturnType<typeof message>[], system?: string) =>
-  reactionModeFromRequest({ messages: messages as never, ...(system === undefined ? {} : { system }) })
+const message = createSystemMessage
+const mode = (messages: RequestMessage[], system?: string) =>
+  reactionModeFromRequest({ messages, ...(system === undefined ? {} : { system }) })
 
 describe('effective request reaction mode', () => {
   it('reads a system-role prompt instead of requiring the legacy field', () => {
-    expect(mode([message(auto), message('Hello', 'user')])).toBe('auto')
+    expect(mode([message(auto), createUserMessage({ content: [{ type: 'text', text: 'Hello' }], source: { kind: 'user' } })])).toBe('auto')
   })
   it('uses the most recent full snapshot for in-history prompt updates', () => {
     expect(mode([message(auto), message(frequent)])).toBe('frequent')
@@ -22,13 +21,14 @@ describe('effective request reaction mode', () => {
     expect(mode([message('General instructions'), message('')])).toBeUndefined()
     expect(mode([message(''), message('')])).toBeUndefined()
   })
-  it('never activates from user, assistant, or unrelated plugin messages', () => {
-    expect(mode([message(auto, 'user'), message(frequent, 'assistant')])).toBeUndefined()
-    expect(mode([message('General instructions'), message(frequent, 'system', 'other-plugin')])).toBeUndefined()
-    expect(mode([message(auto), message('Other context', 'system', 'other-plugin')])).toBe('auto')
-  })
-  it('supports system messages from callers without plugin source metadata', () => {
-    expect(reactionModeFromRequest({ messages: [{ role: 'system', content: [{ type: 'text', text: auto }] }] as never })).toBe('auto')
+  it('never activates from user, assistant, or developer messages', () => {
+    const other: RequestMessage[] = [
+      createUserMessage({ content: [{ type: 'text', text: auto }], source: { kind: 'user' } }),
+      createAssistantMessage({ content: [{ type: 'text', text: frequent }], source: { provider: 'test', model: 'test' } }),
+      createDeveloperMessage({ content: [{ type: 'text', text: frequent }], source: { kind: 'user' } }),
+    ]
+    expect(mode(other)).toBeUndefined()
+    expect(mode([message(auto), ...other])).toBe('auto')
   })
   it('keeps explicit legacy and one-shot prompts authoritative', () => {
     expect(mode([], frequent)).toBe('frequent')
