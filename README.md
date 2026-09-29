@@ -95,7 +95,7 @@ sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 
 ## 兼容性
 
-需要 DSH `0.1.7-rc.2` 或满足 peer 范围的版本，以及 Node.js `^22.19.0 || >=24`。本地开发固定精确 DSH 类型链，部署时由 Web Profile 提供共享运行时；已验证版本记录在 `package.json` 的 `dsh.compatibility.dshReleases` 中。设置保存到当前 Profile 的 `cordis.patch.yml`，表情素材保存在 DSH Home 中。
+支持 DSH `0.1.7-rc.2` 与 `0.2.0-rc.2` 所属的 peer 范围（`^0.1.7-rc.2 || ^0.2.0-rc.2`），以及 Node.js `^22.19.0 || >=24`。本地开发固定 DSH `0.2.0-rc.2` 的精确类型链，部署时由 Web Profile 提供共享运行时；完整运行验收状态记录在 `package.json` 的 `dsh.compatibility.dshReleases` 中。设置保存到当前 Profile 的 `cordis.patch.yml`，表情素材保存在 DSH Home 中。
 
 ## 本地开发
 

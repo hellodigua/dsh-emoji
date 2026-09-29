@@ -83,7 +83,7 @@ User packs live under `$DSH_HOME/emoji-packs/` (default `~/.dsh/emoji-packs/`), 
 
 ## Compatibility
 
-Requires DSH `0.1.7-rc.2` or a version admitted by the peer ranges, with Node.js `^22.19.0 || >=24`. Development pins the exact DSH type graph; the Web Profile supplies the shared runtime. Verified releases are recorded in `package.json` under `dsh.compatibility.dshReleases`. Settings persist in the active Profile's `cordis.patch.yml`; image packs live in DSH Home.
+Supports DSH versions admitted by `^0.1.7-rc.2 || ^0.2.0-rc.2`, with Node.js `^22.19.0 || >=24`. Development pins the exact DSH `0.2.0-rc.2` type graph; the Web Profile supplies the shared runtime. Full runtime acceptance status is recorded in `package.json` under `dsh.compatibility.dshReleases`. Settings persist in the active Profile's `cordis.patch.yml`; image packs live in DSH Home.
 
 ## Local development
 

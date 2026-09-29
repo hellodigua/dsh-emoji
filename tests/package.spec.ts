@@ -48,18 +48,19 @@ describe('Profile Bundle package', () => {
   it('通过 npm peer 接入 DSH 公共契约，并用精确发行版开发验证', () => {
     expect(packageJson.dsh.compatibility.dshReleases).toEqual({
       '0.1.7-rc.2': 'unknown',
+      '0.2.0-rc.2': 'unknown',
     })
     const dshPeers = Object.entries(packageJson.peerDependencies)
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
     for (const [, range] of dshPeers) {
-      expect(range).toBe('^0.1.7-rc.2')
+      expect(range).toBe('^0.1.7-rc.2 || ^0.2.0-rc.2')
     }
     expect(packageJson.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.4')
     expect(packageJson.peerDependencies['@deepseek-ai/cordis-plugin-loader']).toBe('^1.0.5')
     expect(packageJson.peerDependencies['@deepseek-ai/schemastery']).toBe('^3.18.4')
     for (const [name] of dshPeers) {
-      expect(packageJson.devDependencies[name]).toBe('0.1.7-rc.2')
+      expect(packageJson.devDependencies[name]).toBe('0.2.0-rc.2')
     }
     expect(packageJson.devDependencies['@deepseek-ai/cordis']).toBe('4.0.4')
     expect(packageJson.devDependencies['@deepseek-ai/cordis-plugin-loader']).toBe('1.0.5')

@@ -54,6 +54,6 @@ python3 scripts/slice-deepseek-sheet.py \
 
 ## DSH 兼容边界
 
-- 当前开发基线为 `0.1.7-rc.2`；peerDependencies 表达公共模块的部署要求，精确的 devDependencies 固定本地类型检查和测试基线。逐版本兼容状态以 `package.json#dsh.compatibility.dshReleases` 为准，未完成验收的版本保持 `unknown`。构建依赖通过公开 npm 安装，禁止用同级源码 checkout 的 `link:` 依赖冒充兼容性验证。
+- 当前开发基线为 `0.2.0-rc.2`；peerDependencies 表达公共模块的部署要求，精确的 devDependencies 固定本地类型检查和测试基线。逐版本兼容状态以 `package.json#dsh.compatibility.dshReleases` 为准，未完成验收的版本保持 `unknown`。构建依赖通过公开 npm 安装，禁止用同级源码 checkout 的 `link:` 依赖冒充兼容性验证。
 - `dsh-api-gateway`、`dsh-invariants`、`dsh-typert-registry` 与 `dsh-scope` 保持同一精确发行版的公共类型身份；最终兼容性需要构建产物在精确 DSH npm 运行时下完成 Host Boot、Client 设置、素材、真实模型和生命周期验证。
 - DSH 再次修改客户端设置包、Cordis 服务名或 Settings 公共类型时，应先更新 peer 范围并重新执行完整交付检查。
