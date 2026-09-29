@@ -30,7 +30,8 @@
       "types": "./lib/types/client/index.d.ts",
       "default": "./lib/client.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "assets/emoji/deepseek",
@@ -42,7 +43,8 @@
     "LICENSE",
     "README.md",
     "README.en.md",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "locale"
   ],
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
