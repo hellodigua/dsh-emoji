@@ -62,11 +62,11 @@ async function setup(options?: { settings?: boolean; connection?: boolean }): Pr
   return { ctx: context, adapter, packs, fiber }
 }
 
-async function customPackArchive(): Promise<Uint8Array> {
+async function customPackArchive(displayMode?: 'inline' | 'block'): Promise<Uint8Array> {
   const png = new Uint8Array(await readFile(new URL('../assets/emoji/deepseek/ds_02.png', import.meta.url)))
   return zipSync({
     'pack.json': strToU8(JSON.stringify({
-      schemaVersion: 1, keySet: EMOJI_KEY_SET, id: 'custom-blue', name: 'Custom Blue', version: '1.0.0',
+      schemaVersion: 1, keySet: EMOJI_KEY_SET, id: 'custom-blue', name: 'Custom Blue', version: '1.0.0', displayMode,
     })),
     ...Object.fromEntries(EMOJIS.map(emoji => [`images/${emoji.key}.png`, png])),
   })
@@ -225,4 +225,23 @@ describe('real Cordis service composition', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('image/png')
   })
+})
+
+
+it('switches block guidance and preserves the layout marker in final streamed output', async () => {
+  const { ctx, packs } = await setup({ settings: true })
+  await packs.installArchive(await customPackArchive('block'))
+  await ctx.settings.update(EMOJI_SETTINGS_NS, { activePack: 'custom-blue@1.0.0' })
+  await vi.waitFor(async () => {
+    expect(renderPrompt(await ctx.systemPrompt.assemble())).toContain('alone in its own paragraph')
+  })
+  const text = await modelText(ctx)
+  const url = /!\[😊\]\(([^)]+)\)/.exec(text)?.[1]
+  expect(url).toMatch(/#dsh-emoji-block$/)
+  expect((await fetch(String(url))).status).toBe(200)
+  await ctx.settings.update(EMOJI_SETTINGS_NS, { activePack: DEFAULT_EMOJI_SETTINGS.activePack })
+  await vi.waitFor(async () => {
+    expect(renderPrompt(await ctx.systemPrompt.assemble())).not.toContain('alone in its own paragraph')
+  })
+  expect(await modelText(ctx)).not.toContain('#dsh-emoji-block')
 })

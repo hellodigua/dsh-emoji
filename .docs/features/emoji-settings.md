@@ -11,6 +11,7 @@ Settings 表单使用 Profile entry id `dsh-emoji`，当前字段如下：
 | 字段 | 取值 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `mode` | `off` / `auto` / `frequent` | `auto` | 控制受控 Unicode 表情协议是否启用及提示强度 |
+| `blockDisplaySize` | `small` / `normal` / `large` / `xlarge` | `normal` | 独立表情尺寸，分别为 120、160、200、240px，与行内设置分别保存 |
 | `displaySize` | `small` / `normal` / `large` / `xlarge` | `normal` | Web 行内表情显示档位；分别对应 `1.25em`、`1.5em`、`2em`、`2.5em` |
 | `customPrompt` | string，最多 4000 字符 | 空字符串 | 追加表情选择、语气、插入位置和需要跳过表情的场景；允许任意语言 |
 | `activePack` | 已安装的不可变 `id@version` | `deepseek@8` | 决定新回复把受控 Unicode 表情映射到哪套图片；切换不改历史消息 URL |
@@ -72,4 +73,4 @@ Loader 的 Config 以 `.volatile()` 声明整个配置对象。Settings 将它�
 | 偏大 | `large` | `2em` | `-0.55em` |
 | 大 | `xlarge` | `2.5em` | `-0.8em` |
 
-`normal`（界面“正常”）是默认值，配置缺少 `displaySize` 时由 schema 自动补齐该档；已经明确保存其他档位的用户配置保持不变。设置页使用草稿值即时更新一行真实的“文字 + 当前包表情 + 文字”预览以及当前标签页中的会话表情；放弃时恢复已保存值，保存后其他标签页自动刷新。选择器只命中 `/api/dsh-emoji/assets/`，不改变普通 Markdown 图片，也不修改素材、表情包协议或 system prompt。
+`normal`（界面“正常”）是默认值，配置缺少 `displaySize` 时由 schema 自动补齐该档；已经明确保存其他档位的用户配置保持不变。设置页使用草稿值即时更新一行真实的“文字 + 当前包表情 + 文字”预览以及当前标签页中的会话表情；放弃时恢复已保存值，保存后其他标签页自动刷新。设置页根据当前表情包的 `displayMode` 展示行内或独立尺寸控制；两种尺寸分别持久化，预览使用当前包的展示方式。选择器只命中 `/api/dsh-emoji/assets/`，不改变普通 Markdown 图片，也不修改素材、表情包协议或 system prompt。

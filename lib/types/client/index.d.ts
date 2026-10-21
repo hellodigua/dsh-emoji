@@ -12,12 +12,12 @@ export { EmojiSettingsController, type EmojiSettingsErrorCode, type EmojiSetting
 export declare const EMOJI_STYLE_ID = "dsh-emoji/inline-style";
 export declare const EMOJI_SELECTOR = "img[src*=\"/api/dsh-emoji/assets/\"]:not([data-dsh-emoji-pack-preview])";
 export declare const EMOJI_SETTINGS_CARD_SELECTOR = "[data-dsh-emoji-settings-card=\"true\"]";
-export declare function emojiCss(displaySize: EmojiDisplaySize): string;
+export declare function emojiCss(displaySize: EmojiDisplaySize, blockDisplaySize?: EmojiDisplaySize): string;
 export declare const EMOJI_CSS: string;
 /** 注入唯一 style 标签，并在最后一个挂载者释放时清理。 */
 export declare function installEmojiStyles(doc?: Document, displaySize?: EmojiDisplaySize): () => void;
 /** 用设置草稿即时更新当前文档中的 dsh-emoji 尺寸。 */
-export declare function setEmojiDisplaySize(displaySize: EmojiDisplaySize, doc?: Document): void;
+export declare function setEmojiDisplaySize(displaySize: EmojiDisplaySize, doc?: Document, blockDisplaySize?: EmojiDisplaySize): void;
 export declare const inject: string[];
 /** 挂载样式、设置状态同步和插件设置卡片。 */
 export declare function apply(ctx: ClientContext): void;

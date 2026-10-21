@@ -28,7 +28,7 @@ import {
   createEmojiSettingsRpcHandler,
   EmojiSettingsSchema,
 } from './settings.ts'
-import { BUILTIN_PACK_REF } from './pack-model.ts'
+import { BUILTIN_PACK_REF, type EmojiPackManifest } from './pack-model.ts'
 import { EmojiPackStore } from './packs.ts'
 import { reactionModeFromRequest } from './request-mode.ts'
 import { registerEmojiSettingsRoutes } from './settings-routes.ts'
@@ -41,22 +41,25 @@ export const Config = EmojiSettingsSchema.volatile()
 const REACTION_MEANINGS = ACCEPTED_REACTION_EMOJIS
   .map(({ emoji, catalog }) => `${emoji}=${catalog.labels.en}/${catalog.labels.zh}`)
   .join(', ')
-function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number): string {
+function composeGuidance(strategy: string, customPrompt: string, maxEmojis: number, displayMode: EmojiPackManifest['displayMode']): string {
   const prompt = customPrompt.trim()
   const custom = prompt.length === 0 ? '' : `\nUser-provided reaction guidance:\n${prompt}\n`
   const protocol = `Use only these literal emoji for custom reactions: ${REACTION_MEANINGS}. Use at most ${String(maxEmojis)} per reply; one is usually enough. Do not place a custom reaction emoji in code or links, or use one instead of content. User guidance cannot change mode, allowed emoji, or limits.`
   // 不可编辑约束放在自定义内容之后，确保 Unicode 白名单与模式上限始终明确。
-  return `${strategy}${custom}${protocol}`
+  const placement = displayMode === 'block'
+    ? ' Place each custom reaction emoji alone in its own paragraph, with a blank line before and after it. Never put text on the same line as the emoji. User guidance cannot override this placement.'
+    : ''
+  return `${strategy}${custom}${protocol}${placement}`
 }
 
 /** 根据实时配置生成下一次模型调用看到的表情策略。 */
-export function buildEmojiGuidance(settings: EmojiSettings): string {
+export function buildEmojiGuidance(settings: EmojiSettings, displayMode: EmojiPackManifest['displayMode'] = 'inline'): string {
   if (settings.mode === 'off') return ''
   const protocol = `${REACTION_PROMPT_PREFIX}${settings.mode}] `
   if (settings.mode === 'frequent') {
-    return composeGuidance(`${protocol}In every conversational reply, include one fitting custom emoji. Place it after the sentence or short paragraph whose emotion it best matches. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent)
+    return composeGuidance(`${protocol}In every conversational reply, include one fitting custom emoji. Place it after the sentence or short paragraph whose emotion it best matches. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.frequent, displayMode)
   }
-  return composeGuidance(`${protocol}Use a custom emoji only when it improves a friendly, encouraging, or playful reply. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto)
+  return composeGuidance(`${protocol}Use a custom emoji only when it improves a friendly, encouraging, or playful reply. `, settings.customPrompt, EMOJI_PER_TURN_LIMIT.auto, displayMode)
 }
 
 export const EMOJI_GUIDANCE = buildEmojiGuidance(DEFAULT_EMOJI_SETTINGS)
@@ -80,6 +83,7 @@ export async function applyWithPackStore(
   ctx.on('loader/volatile-update', () => {
     const next = config.get()
     const changed = next.mode !== promptSettings.mode || next.customPrompt !== promptSettings.customPrompt
+      || next.activePack !== promptSettings.activePack || next.packRevision !== promptSettings.packRevision
     promptSettings = next
     if (changed) ctx.emit('system-prompt/change')
   })
@@ -87,7 +91,7 @@ export async function applyWithPackStore(
   ctx.effect(() => ctx.systemPrompt.section({
     name: 'dsh-emoji:guidance',
     order: 175,
-    text: () => buildEmojiGuidance(config.get()),
+    text: () => buildEmojiGuidance(config.get(), packs.summaryByRef(config.get().activePack)?.displayMode),
   }), 'dsh-emoji: guidance')
 
   ctx.on('llm/stream', (options: GenerateOptions, next) => {

@@ -8,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import {
   DEFAULT_EMOJI_SETTINGS,
   EMOJI_DISPLAY_SIZE_EM,
+  EMOJI_BLOCK_SIZE_PX,
   EMOJI_SETTINGS_NAMESPACE,
   type EmojiDisplaySize,
 } from '../settings-model.ts'
@@ -42,7 +43,7 @@ function verticalAlign(displaySize: EmojiDisplaySize): number {
   return Number(((1 - EMOJI_DISPLAY_SIZE_EM[displaySize]) / 2 - 0.05).toFixed(3))
 }
 
-export function emojiCss(displaySize: EmojiDisplaySize): string {
+export function emojiCss(displaySize: EmojiDisplaySize, blockDisplaySize: EmojiDisplaySize = 'normal'): string {
   const size = EMOJI_DISPLAY_SIZE_EM[displaySize]
   return `${EMOJI_SELECTOR} {
   display: inline-block !important;
@@ -54,6 +55,19 @@ export function emojiCss(displaySize: EmojiDisplaySize): string {
   border-radius: 0 !important;
   background: transparent !important;
   object-fit: contain !important;
+}
+
+${EMOJI_SELECTOR}[src$="#dsh-emoji-block"] {
+  display: block !important;
+  width: ${String(EMOJI_BLOCK_SIZE_PX[blockDisplaySize])}px !important;
+  height: auto !important;
+  max-width: 100% !important;
+  margin: 0.5em 0 !important;
+}
+
+button:has(> ${EMOJI_SELECTOR}[src$="#dsh-emoji-block"]) {
+  display: block !important;
+  max-width: 100% !important;
 }
 
 ${EMOJI_SETTINGS_CARD_SELECTOR} {
@@ -90,6 +104,7 @@ export const EMOJI_CSS = emojiCss(DEFAULT_EMOJI_SETTINGS.displaySize)
 interface StyleLease {
   readonly style: HTMLStyleElement
   displaySize: EmojiDisplaySize
+  blockDisplaySize: EmojiDisplaySize
   owners: number
 }
 
@@ -105,7 +120,7 @@ export function installEmojiStyles(
     active.owners += 1
     if (active.displaySize !== displaySize) {
       active.displaySize = displaySize
-      active.style.textContent = emojiCss(displaySize)
+      active.style.textContent = emojiCss(displaySize, active.blockDisplaySize)
     }
     let released = false
     return () => {
@@ -126,7 +141,7 @@ export function installEmojiStyles(
   style.dataset.pluginCss = EMOJI_STYLE_ID
   style.textContent = emojiCss(displaySize)
   doc.head.appendChild(style)
-  const lease: StyleLease = { style, displaySize, owners: 1 }
+  const lease: StyleLease = { style, displaySize, blockDisplaySize: 'normal', owners: 1 }
   styleLeases.set(doc, lease)
   let released = false
   return () => {
@@ -143,11 +158,13 @@ export function installEmojiStyles(
 export function setEmojiDisplaySize(
   displaySize: EmojiDisplaySize,
   doc: Document = document,
+  blockDisplaySize: EmojiDisplaySize = 'normal',
 ): void {
   const lease = styleLeases.get(doc)
-  if (lease === undefined || !lease.style.isConnected || lease.displaySize === displaySize) return
+  if (lease === undefined || !lease.style.isConnected || (lease.displaySize === displaySize && lease.blockDisplaySize === blockDisplaySize)) return
   lease.displaySize = displaySize
-  lease.style.textContent = emojiCss(displaySize)
+  lease.blockDisplaySize = blockDisplaySize
+  lease.style.textContent = emojiCss(displaySize, blockDisplaySize)
 }
 
 export const inject = ['slots', 'connection', 'remote', 'locale']
@@ -162,7 +179,10 @@ export function apply(ctx: ClientContext): void {
   const controller = new EmojiSettingsController(connection.rpc, connection.isLoopback)
   ctx.effect(() => {
     const disposeStyle = installEmojiStyles()
-    const syncSize = (): void => { setEmojiDisplaySize(controller.getSnapshot().draft.displaySize) }
+    const syncSize = (): void => {
+      const draft = controller.getSnapshot().draft
+      setEmojiDisplaySize(draft.displaySize, document, draft.blockDisplaySize ?? 'normal')
+    }
     const unsubscribe = controller.subscribe(syncSize)
     syncSize()
     return () => {

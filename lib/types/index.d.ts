@@ -4,13 +4,14 @@
  */
 import type { Context, Volatile } from '@deepseek-ai/cordis';
 import { type EmojiSettings } from './settings-model.ts';
+import { type EmojiPackManifest } from './pack-model.ts';
 import { EmojiPackStore } from './packs.ts';
 export declare const name = "dsh-emoji";
 export declare const inject: string[];
 export type Config = Volatile<EmojiSettings>;
 export declare const Config: import("@deepseek-ai/schemastery").default<NoInfer<EmojiSettings>, NoInfer<EmojiSettings>, "volatile">;
 /** 根据实时配置生成下一次模型调用看到的表情策略。 */
-export declare function buildEmojiGuidance(settings: EmojiSettings): string;
+export declare function buildEmojiGuidance(settings: EmojiSettings, displayMode?: EmojiPackManifest['displayMode']): string;
 export declare const EMOJI_GUIDANCE: string;
 /** 挂载动态提示词、LLM 流转写、持久化设置 RPC 和静态素材路由。 */
 export declare function applyWithPackStore(ctx: Context, config: Config, packs: EmojiPackStore): Promise<void>;

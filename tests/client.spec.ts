@@ -231,6 +231,7 @@ describe('Web Client settings controller', () => {
         settings: {
           mode: 'frequent',
           displaySize: 'small',
+          blockDisplaySize: 'normal',
           customPrompt: '把表情放在最相关的转折句后。',
           activePack: BUILTIN_PACK_REF,
           packRevision: 0,
@@ -411,4 +412,46 @@ describe('Web Client settings controller', () => {
     controller.uploadPack(new File([Uint8Array.from([0x50, 0x4b, 0x03, 0x04])], 'pack.zip'))
     await vi.waitFor(() => expect(controller.getSnapshot().error).toBe('packConflict'))
   })
+})
+
+
+describe('standalone sticker layout', () => {
+  it('uses block layout and a separate pixel size while preserving inline styles', () => {
+    const css = emojiCss('small', 'large')
+    expect(css).toContain('width: 1.25em !important')
+    expect(css).toContain('[src$="#dsh-emoji-block"]')
+    expect(css).toContain('display: block !important')
+    expect(css).toContain('width: 200px !important')
+    expect(css).toContain('max-width: 100% !important')
+    const dispose = installEmojiStyles(document, 'small')
+    setEmojiDisplaySize('small', document, 'xlarge')
+    expect(document.head.textContent).toContain('width: 240px !important')
+    dispose()
+  })
+})
+
+
+it('keeps inline and standalone sizes independent across pack switches and saves', async () => {
+  let saved: EmojiSettingsDocument = {
+    settings: { ...DEFAULT_EMOJI_SETTINGS }, revision: 0, writable: true,
+    packs: [BUILTIN_PACK, { ...CUSTOM_PACK, displayMode: 'block' }],
+  }
+  const rpc = { call: async (_channel: string, endpoint: string, payload: unknown) => {
+    if (endpoint.endsWith('/save')) {
+      saved = { ...saved, settings: (payload as { settings: EmojiSettingsDocument['settings'] }).settings, revision: saved.revision + 1 }
+    }
+    return { ok: true as const, value: saved }
+  } } as ClientConnectionRpc
+  const controller = new EmojiSettingsController(rpc, true)
+  await controller.refresh()
+  controller.editDisplaySize('small')
+  controller.editActivePack(CUSTOM_PACK.ref)
+  controller.editDisplaySize('large')
+  expect(controller.getSnapshot().draft).toMatchObject({ displaySize: 'small', blockDisplaySize: 'large' })
+  controller.save()
+  await vi.waitFor(() => expect(controller.getSnapshot().saving).toBe(false))
+  expect(saved.settings).toMatchObject({ displaySize: 'small', blockDisplaySize: 'large' })
+  controller.editActivePack(BUILTIN_PACK.ref)
+  controller.editDisplaySize('xlarge')
+  expect(controller.getSnapshot().draft).toMatchObject({ displaySize: 'xlarge', blockDisplaySize: 'large' })
 })

@@ -9,6 +9,8 @@ export declare const EMOJI_PER_TURN_LIMIT: Readonly<Record<EmojiMode, number>>;
 export declare const EMOJI_DISPLAY_SIZES: readonly ["small", "normal", "large", "xlarge"];
 export type EmojiDisplaySize = (typeof EMOJI_DISPLAY_SIZES)[number];
 export declare const EMOJI_DISPLAY_SIZE_EM: Readonly<Record<EmojiDisplaySize, number>>;
+/** 独立表情使用像素尺寸，与行内设置分别保存。 */
+export declare const EMOJI_BLOCK_SIZE_PX: Readonly<Record<EmojiDisplaySize, number>>;
 export declare const MAX_CUSTOM_PROMPT_LENGTH = 4000;
 /** 用户未添加额外偏好时保持为空；内置英文策略与协议不进入持久化配置。 */
 export declare const DEFAULT_CUSTOM_PROMPT = "";
@@ -16,6 +18,7 @@ export declare const DEFAULT_CUSTOM_PROMPT = "";
 export interface EmojiSettings {
     mode: EmojiMode;
     displaySize: EmojiDisplaySize;
+    blockDisplaySize?: EmojiDisplaySize;
     customPrompt: string;
     activePack: string;
     /** 包目录变更代际，仅用于跨标签失效；不参与 AI 策略。 */
