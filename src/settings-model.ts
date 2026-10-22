@@ -26,6 +26,11 @@ export const EMOJI_DISPLAY_SIZE_EM: Readonly<Record<EmojiDisplaySize, number>> =
   xlarge: 2.5,
 })
 
+/** 独立表情使用像素尺寸，与行内设置分别保存。 */
+export const EMOJI_BLOCK_SIZE_PX: Readonly<Record<EmojiDisplaySize, number>> = Object.freeze({
+  small: 120, normal: 160, large: 200, xlarge: 240,
+})
+
 export const MAX_CUSTOM_PROMPT_LENGTH = 4000
 
 /** 用户未添加额外偏好时保持为空；内置英文策略与协议不进入持久化配置。 */
@@ -35,6 +40,7 @@ export const DEFAULT_CUSTOM_PROMPT = ''
 export interface EmojiSettings {
   mode: EmojiMode
   displaySize: EmojiDisplaySize
+  blockDisplaySize?: EmojiDisplaySize
   customPrompt: string
   activePack: string
   /** 包目录变更代际，仅用于跨标签失效；不参与 AI 策略。 */
@@ -45,6 +51,7 @@ export interface EmojiSettings {
 export const DEFAULT_EMOJI_SETTINGS: Readonly<EmojiSettings> = Object.freeze({
   mode: 'auto',
   displaySize: 'normal',
+  blockDisplaySize: 'normal',
   customPrompt: DEFAULT_CUSTOM_PROMPT,
   activePack: BUILTIN_PACK_REF,
   packRevision: 0,
@@ -87,6 +94,7 @@ export function parseEmojiSettings(value: unknown): EmojiSettings | undefined {
   const candidate = value as Record<string, unknown>
   if (!isEmojiMode(candidate.mode)
     || !isEmojiDisplaySize(candidate.displaySize)
+    || (candidate.blockDisplaySize !== undefined && !isEmojiDisplaySize(candidate.blockDisplaySize))
     || typeof candidate.customPrompt !== 'string'
     || candidate.customPrompt.length > MAX_CUSTOM_PROMPT_LENGTH
     || !isEmojiPackRef(candidate.activePack)
@@ -94,6 +102,7 @@ export function parseEmojiSettings(value: unknown): EmojiSettings | undefined {
   return {
     mode: candidate.mode,
     displaySize: candidate.displaySize,
+    blockDisplaySize: candidate.blockDisplaySize ?? 'normal',
     customPrompt: candidate.customPrompt,
     activePack: candidate.activePack,
     packRevision: Number(candidate.packRevision),

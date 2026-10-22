@@ -43,6 +43,7 @@ async function pngArchive(options: {
   name?: string
   version?: string
   keySet?: string
+  displayMode?: string
   omitKeySet?: boolean
   omitKey?: string
   extra?: Record<string, Uint8Array>
@@ -57,6 +58,7 @@ async function pngArchive(options: {
       id: options.id ?? 'my-whale',
       name: options.name ?? 'My Whale',
       version: options.version ?? '1.0.0',
+      displayMode: options.displayMode,
     })),
     ...Object.fromEntries(EMOJIS
       .filter(emoji => emoji.key !== options.omitKey)
@@ -280,4 +282,23 @@ describe('user emoji pack store', () => {
     await reloaded.initialize()
     expect(reloaded.has('tampered-image@1.0.0')).toBe(false)
   })
+})
+
+
+it('persists block presentation on reload, tags response URLs, and rejects invalid modes', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-block-pack-'))
+  roots.add(root)
+  const packs = new EmojiPackStore({ root })
+  await packs.initialize()
+  const installed = await packs.installArchive(await pngArchive({ displayMode: 'block' }))
+  expect(installed.displayMode).toBe('block')
+  expect(packs.assetUrl(installed.ref, EMOJIS[0]!)).toMatch(/#dsh-emoji-block$/)
+  expect(installed.previews[0]!.url).not.toContain('#')
+  const reloaded = new EmojiPackStore({ root })
+  await reloaded.initialize()
+  expect(reloaded.summaryByRef(installed.ref)?.displayMode).toBe('block')
+  expect(reloaded.assetUrl(installed.ref, EMOJIS[0]!)).toMatch(/#dsh-emoji-block$/)
+  expect(reloaded.summaryByRef(BUILTIN_PACK_REF)?.displayMode).toBe('inline')
+  await expect(packs.installArchive(await pngArchive({ displayMode: 'invalid' })))
+    .rejects.toMatchObject({ code: 'pack-invalid' })
 })

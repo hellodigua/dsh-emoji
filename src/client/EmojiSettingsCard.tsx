@@ -7,7 +7,7 @@ import type {
 import { IconChevronDownOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import {
-  EMOJI_DISPLAY_SIZES, EMOJI_DISPLAY_SIZE_EM, EMOJI_MODES, MAX_CUSTOM_PROMPT_LENGTH,
+  EMOJI_DISPLAY_SIZES, EMOJI_DISPLAY_SIZE_EM, EMOJI_BLOCK_SIZE_PX, EMOJI_MODES, MAX_CUSTOM_PROMPT_LENGTH,
   type EmojiDisplaySize, type EmojiMode,
 } from '../settings-model.ts'
 import type { EmojiPackSummary } from '../pack-model.ts'
@@ -200,6 +200,9 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
   const editable = state.status === 'ready' && state.writable && !state.saving && !state.packBusy
   const revisionBlocked = state.error === 'conflict'
   const selectedPack = state.packs.find(pack => pack.ref === state.draft.activePack)
+  const blockMode = selectedPack?.displayMode === 'block'
+  const currentSize = blockMode ? (state.draft.blockDisplaySize ?? 'normal') : state.draft.displaySize
+  const previewSize = blockMode ? `${EMOJI_BLOCK_SIZE_PX[currentSize]}px` : `${EMOJI_DISPLAY_SIZE_EM[currentSize]}em`
   const displaySizeEm = EMOJI_DISPLAY_SIZE_EM[state.draft.displaySize]
   const displayAlignEm = Number(((1 - displaySizeEm) / 2 - 0.05).toFixed(3))
   const title = props.t('title')
@@ -374,14 +377,14 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
               <span style={styles.description}>{props.t('pack.help')}</span>
             </section>
             <fieldset style={styles.sizeFieldset} disabled={!editable}>
-              <legend style={styles.legend}>{props.t('size.legend')}</legend>
+              <legend style={styles.legend}>{props.t(blockMode ? 'size.blockLegend' : 'size.legend')}</legend>
               <div style={styles.sizeOptions}>
                 {EMOJI_DISPLAY_SIZES.map((displaySize) => {
-                  const selected = state.draft.displaySize === displaySize
+                  const selected = currentSize === displaySize
                   return (
                     <label
                       key={displaySize}
-                      title={`${String(EMOJI_DISPLAY_SIZE_EM[displaySize])}em`}
+                      title={blockMode ? `${EMOJI_BLOCK_SIZE_PX[displaySize]}px` : `${EMOJI_DISPLAY_SIZE_EM[displaySize]}em`}
                       style={{
                         ...styles.mode,
                         ...(selected ? styles.modeSelected : {}),
@@ -396,7 +399,7 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                         checked={selected}
                         onChange={() => { props.editDisplaySize(displaySize) }}
                       />
-                      <span style={styles.modeTitle}>{props.t(SIZE_COPY[displaySize])}</span>
+                      <span style={styles.modeTitle}>{props.t(SIZE_COPY[displaySize])}{blockMode ? ` · ${EMOJI_BLOCK_SIZE_PX[displaySize]}px` : ''}</span>
                     </label>
                   )
                 })}
@@ -406,11 +409,12 @@ export function EmojiSettingsCard(props: EmojiSettingsCardProps) {
                 {selectedPack?.previews[0] !== undefined
                   ? (
                     <img
+                      data-dsh-emoji-pack-preview="true"
                       src={selectedPack.previews[0].url}
                       alt={selectedPack.previews[0].label}
                       style={{
-                        display: 'inline-block', width: `${String(displaySizeEm)}em`,
-                        height: `${String(displaySizeEm)}em`, margin: '0 0.08em',
+                        display: blockMode ? 'block' : 'inline-block', width: previewSize,
+                        height: blockMode ? 'auto' : previewSize, maxWidth: '100%', margin: blockMode ? '0.5em 0' : '0 0.08em',
                         verticalAlign: `${String(displayAlignEm)}em`, objectFit: 'contain',
                       }}
                     />

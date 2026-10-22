@@ -2,7 +2,7 @@
 
 English | [简体中文](README.md)
 
-Add switchable, customizable inline emoji to DeepSeek Harness responses.
+Add switchable, customizable inline emoji and standalone stickers to DeepSeek Harness responses.
 
 ![dsh-emoji whale emoji pack](assets/readme/banner.en.png)
 
@@ -22,7 +22,7 @@ To try a prerelease, replace the package name in the installation command with `
 
 ## How it works
 
-- When the AI wants an emotional or decorative reaction, it chooses directly from 42 allowed Unicode emoji, such as `😊`. They resolve to 40 stable semantic keys, and the Host converts the chosen character into an inline image from the active emoji pack without another model call.
+- When the AI wants an emotional or decorative reaction, it chooses directly from 42 allowed Unicode emoji, such as `😊`. They resolve to 40 stable semantic keys, and the Host converts the chosen character into an image from the active emoji pack without another model call.
 - Built-in and uploaded packs share 40 stable semantic keys, can be switched at any time, and support four display sizes.
 - Rewriting applies only to the 40 canonical Unicode emoji, the common aliases `😄` and `🙂`, and this plugin's images. Other Unicode emoji, code, links, double-colon text, and ordinary Markdown images are left unchanged. The program never guesses the reply's emotion or inserts a fallback image. Reply text must separate multiple plugin emoji, while the same emoji may repeat later.
 
@@ -53,7 +53,9 @@ my-whale.zip
     └── ...the remaining canonical keys
 ```
 
-`pack.json`:
+The optional `displayMode` field controls presentation: omit it or use `"inline"` for inline emoji, or use `"block"` for standalone stickers. For block packs, the AI is instructed to place each emoji in its own paragraph with blank lines before and after it, and the Web client displays the sticker on a separate line. Standalone stickers default to 160px, with 120 / 160 / 200 / 240px options in settings. Inline and standalone sizes are saved separately. Switching packs does not change the presentation mode of historical replies.
+
+Example `pack.json` for a standalone sticker pack:
 
 ```json
 {
@@ -61,7 +63,8 @@ my-whale.zip
   "keySet": "dsh-emoji-core@1",
   "id": "my-whale",
   "name": "My Whale Emoji",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "displayMode": "block"
 }
 ```
 
@@ -77,7 +80,7 @@ scared, facepalm, eye-roll, sigh, frustrated, playful, snickering,
 sarcastic, cool, celebrate, cheer, thanks, sorry, hug, please, applause
 ```
 
-Each key must have exactly one matching `.png`. IDs use lowercase letters, digits, and hyphens; versions use SemVer. Content at one `id@version` is immutable, so changed assets require a new version. Limits are 20 MiB per ZIP, 80 MiB expanded, 2 MiB per file, and 512 pixels per image dimension. Path traversal, extra files, missing keys, unknown `keySet` values, spoofed formats, and conflicting content are rejected.
+Each key must have exactly one matching `.png`. IDs use lowercase letters, digits, and hyphens; versions use SemVer. Content at one `id@version` is immutable, so changes to assets or `displayMode` require a new version. Limits are 20 MiB per ZIP, 80 MiB expanded, 2 MiB per file, and 512 pixels per image dimension. Path traversal, extra files, missing keys, unknown `keySet` values, spoofed formats, and conflicting content are rejected.
 
 User packs live under `$DSH_HOME/emoji-packs/` (default `~/.dsh/emoji-packs/`), while Settings stores only the active `id@version`. **Remove** hides a pack from the selector but intentionally retains its immutable bytes for historical messages. Uploading the exact same ZIP restores that version.
 

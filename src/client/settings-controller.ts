@@ -52,6 +52,7 @@ export interface EmojiSettingsSnapshot {
 function sameSettings(left: EmojiSettings, right: EmojiSettings): boolean {
   return left.mode === right.mode
     && left.displaySize === right.displaySize
+    && (left.blockDisplaySize ?? 'normal') === (right.blockDisplaySize ?? 'normal')
     && left.customPrompt === right.customPrompt
     && left.activePack === right.activePack
 }
@@ -60,6 +61,7 @@ function cloneSettings(value: EmojiSettings): EmojiSettings {
   return {
     mode: value.mode,
     displaySize: value.displaySize,
+    blockDisplaySize: value.blockDisplaySize ?? 'normal',
     customPrompt: value.customPrompt,
     activePack: value.activePack,
     packRevision: value.packRevision,
@@ -72,6 +74,7 @@ function parsePackSummary(value: unknown): EmojiPackSummary | undefined {
   if (typeof candidate.ref !== 'string' || typeof candidate.id !== 'string'
     || typeof candidate.name !== 'string' || typeof candidate.version !== 'string'
     || typeof candidate.builtIn !== 'boolean' || !Number.isSafeInteger(candidate.emojiCount)
+    || (candidate.displayMode !== undefined && candidate.displayMode !== 'inline' && candidate.displayMode !== 'block')
     || !Array.isArray(candidate.previews)) return undefined
   const previews = candidate.previews.map((preview) => {
     if (typeof preview !== 'object' || preview === null || Array.isArray(preview)) return undefined
@@ -86,6 +89,7 @@ function parsePackSummary(value: unknown): EmojiPackSummary | undefined {
     id: candidate.id,
     name: candidate.name,
     version: candidate.version,
+    displayMode: candidate.displayMode as EmojiPackSummary['displayMode'],
     builtIn: candidate.builtIn,
     emojiCount: Number(candidate.emojiCount),
     previews: previews as EmojiPackSummary['previews'],
@@ -272,7 +276,9 @@ export class EmojiSettingsController {
     this.requestGeneration += 1
     this.publish({
       ...this.snapshot,
-      draft: { ...this.snapshot.draft, displaySize },
+      draft: { ...this.snapshot.draft,
+        [this.snapshot.packs.find(pack => pack.ref === this.snapshot.draft.activePack)?.displayMode === 'block'
+          ? 'blockDisplaySize' : 'displaySize']: displaySize },
       saved: false,
       error: this.snapshot.error === 'conflict' ? 'conflict' : undefined,
     })

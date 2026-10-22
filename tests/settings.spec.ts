@@ -225,3 +225,13 @@ describe('plugin-owned settings RPC', () => {
     })
   })
 })
+
+
+it('requires separate paragraphs only for block packs, after custom guidance', () => {
+  const settings = { ...DEFAULT_EMOJI_SETTINGS, customPrompt: 'keep emoji inline' }
+  const prompt = buildEmojiGuidance(settings, 'block')
+  expect(prompt).toContain('alone in its own paragraph')
+  expect(prompt.indexOf('alone in its own paragraph')).toBeGreaterThan(prompt.indexOf('keep emoji inline'))
+  expect(buildEmojiGuidance(settings)).not.toContain('alone in its own paragraph')
+  expect(buildEmojiGuidance({ ...settings, mode: 'off' }, 'block')).toBe('')
+})

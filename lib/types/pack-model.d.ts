@@ -21,6 +21,8 @@ export interface EmojiPackSummary {
     id: string;
     name: string;
     version: string;
+    /** 未声明时使用行内展示。 */
+    displayMode?: 'inline' | 'block';
     builtIn: boolean;
     emojiCount: number;
     previews: readonly EmojiPackPreview[];
@@ -32,6 +34,8 @@ export interface EmojiPackManifest {
     id: string;
     name: string;
     version: string;
+    /** 未声明时使用行内展示。 */
+    displayMode?: 'inline' | 'block';
 }
 export declare function emojiPackRef(id: string, version: string): string;
 //# sourceMappingURL=pack-model.d.ts.map

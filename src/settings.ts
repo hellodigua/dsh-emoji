@@ -35,6 +35,9 @@ export const EmojiSettingsSchema: z<EmojiSettings> = z.object({
   displaySize: z.union([...EMOJI_DISPLAY_SIZES])
     .default('normal')
     .description('The inline emoji display size used by the Web client.'),
+  blockDisplaySize: z.union([...EMOJI_DISPLAY_SIZES])
+    .default('normal')
+    .description('The standalone sticker display size used by the Web client.'),
   customPrompt: z.string()
     .max(MAX_CUSTOM_PROMPT_LENGTH)
     .default(DEFAULT_CUSTOM_PROMPT)

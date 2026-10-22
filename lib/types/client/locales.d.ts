@@ -32,6 +32,7 @@ export declare const en: {
     readonly 'pack.preview.celebrate': "Celebrate";
     readonly 'pack.preview.emoji': "Emoji preview";
     readonly 'size.legend': "Display size";
+    readonly 'size.blockLegend': "Standalone sticker size";
     readonly 'size.small': "Small";
     readonly 'size.normal': "Normal";
     readonly 'size.large': "Large";
@@ -100,6 +101,7 @@ export declare const zh: {
     'pack.preview.celebrate': string;
     'pack.preview.emoji': string;
     'size.legend': string;
+    'size.blockLegend': string;
     'size.small': string;
     'size.normal': string;
     'size.large': string;

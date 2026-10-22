@@ -60,6 +60,7 @@ interface InstalledEmojiPack {
   id: string
   name: string
   version: string
+  displayMode?: EmojiPackManifest['displayMode']
   archiveSha256: string
   files: Record<string, InstalledEmojiFile>
 }
@@ -110,6 +111,7 @@ function parseManifest(value: Uint8Array): EmojiPackManifest {
   const candidate = parsed as Record<string, unknown>
   if (candidate.schemaVersion !== EMOJI_PACK_SCHEMA_VERSION
     || candidate.keySet !== EMOJI_KEY_SET
+    || (candidate.displayMode !== undefined && candidate.displayMode !== 'inline' && candidate.displayMode !== 'block')
     || typeof candidate.id !== 'string' || !PACK_ID_PATTERN.test(candidate.id)
     || candidate.id === BUILTIN_PACK_ID
     || typeof candidate.name !== 'string' || candidate.name.trim().length === 0 || candidate.name.length > 80
@@ -122,6 +124,7 @@ function parseManifest(value: Uint8Array): EmojiPackManifest {
     id: candidate.id,
     name: candidate.name.trim(),
     version: candidate.version,
+    displayMode: candidate.displayMode as EmojiPackManifest['displayMode'],
   }
 }
 
@@ -254,6 +257,7 @@ function parseInstalledPack(value: unknown): InstalledEmojiPack | undefined {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
   const candidate = value as Partial<InstalledEmojiPack>
   const valid = candidate.schemaVersion === 1
+    && (candidate.displayMode === undefined || candidate.displayMode === 'inline' || candidate.displayMode === 'block')
     && (candidate.keySet === undefined || candidate.keySet === EMOJI_KEY_SET)
     && typeof candidate.id === 'string' && PACK_ID_PATTERN.test(candidate.id)
     && typeof candidate.name === 'string'
@@ -370,6 +374,7 @@ export class EmojiPackStore {
       id: pack.id,
       name: pack.name,
       version: pack.version,
+      displayMode: pack.displayMode ?? 'inline',
       builtIn: pack.builtIn,
       emojiCount: EMOJIS.length,
       previews: EMOJIS.map(emoji => {
@@ -385,7 +390,7 @@ export class EmojiPackStore {
   assetUrl(ref: string, emoji: EmojiCatalogEntry): string | undefined {
     const pack = this.packs.get(ref)
     if (pack === undefined || pack.removed) return undefined
-    return this.assetPath(pack, emoji)
+    return this.assetPath(pack, emoji) + (pack.displayMode === 'block' ? '#dsh-emoji-block' : '')
   }
 
   private assetPath(pack: RuntimeEmojiPack, emoji: EmojiCatalogEntry): string {
